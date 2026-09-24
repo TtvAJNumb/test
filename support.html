@@ -1,0 +1,477 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Strata — Support</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0a0b0f;
+    --panel:#14151c;
+    --panel-2:#191a22;
+    --border:#262832;
+    --text:#e9eaf0;
+    --muted:#8c8fa0;
+    --green:#22c55e;
+    --green-bg:rgba(34,197,94,.14);
+    --amber:#eab308;
+    --amber-bg:rgba(234,179,8,.14);
+    --red:#ef4444;
+    --red-bg:rgba(239,68,68,.12);
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--bg);
+    color:var(--text);
+    font-family:'Inter',system-ui,sans-serif;
+    line-height:1.5;
+  }
+  .wrap{max-width:1000px;margin:0 auto;padding:32px 20px 80px;}
+
+  .topnav{display:flex;align-items:center;justify-content:space-between;margin-bottom:28px;}
+  .brand{font-weight:700;letter-spacing:.04em;color:var(--text);}
+  .navtabs{display:flex;gap:6px;background:var(--panel);border:1px solid var(--border);padding:4px;border-radius:10px;}
+  .navtabs button{
+    background:transparent;border:0;color:var(--muted);font:inherit;font-weight:600;
+    padding:8px 14px;border-radius:7px;cursor:pointer;font-size:13px;
+  }
+  .navtabs button.active{background:var(--panel-2);color:var(--text);}
+
+  .bell-wrap{position:relative;}
+  .bell-btn{
+    background:var(--panel);border:1px solid var(--border);color:var(--text);
+    width:38px;height:38px;border-radius:9px;cursor:pointer;font-size:16px;
+    display:flex;align-items:center;justify-content:center;position:relative;
+  }
+  .bell-badge{
+    position:absolute;top:-5px;right:-5px;background:var(--red);color:#fff;
+    font-size:10px;font-weight:700;min-width:16px;height:16px;border-radius:8px;
+    display:flex;align-items:center;justify-content:center;padding:0 4px;
+  }
+  .bell-dropdown{
+    position:absolute;right:0;top:46px;width:300px;background:var(--panel);
+    border:1px solid var(--border);border-radius:10px;padding:8px;z-index:20;
+    box-shadow:0 12px 32px rgba(0,0,0,.5);
+  }
+  .bell-dropdown h4{margin:4px 8px 8px;font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;}
+  .notif-item{padding:10px;border-radius:8px;font-size:13px;}
+  .notif-item + .notif-item{margin-top:2px;}
+  .notif-item.unread{background:var(--panel-2);}
+  .notif-empty{padding:16px 10px;color:var(--muted);font-size:13px;text-align:center;}
+
+  h1{font-size:26px;margin:0 0 4px;}
+  .subtitle{color:var(--muted);font-size:14px;margin:0 0 20px;}
+  .crumb{color:var(--muted);font-size:12px;letter-spacing:.03em;margin-bottom:6px;}
+
+  .pill-row{display:flex;gap:8px;margin-bottom:18px;flex-wrap:wrap;}
+  .pill{
+    background:var(--panel);border:1px solid var(--border);color:var(--muted);
+    padding:8px 14px;border-radius:20px;font-size:13px;font-weight:600;cursor:pointer;
+  }
+  .pill.active{background:var(--green-bg);border-color:var(--green);color:var(--green);}
+
+  table{width:100%;border-collapse:collapse;background:var(--panel);border:1px solid var(--border);border-radius:12px;overflow:hidden;}
+  thead th{
+    text-align:left;font-size:11px;letter-spacing:.06em;color:var(--muted);
+    text-transform:uppercase;padding:14px 16px;border-bottom:1px solid var(--border);
+  }
+  tbody td{padding:14px 16px;border-bottom:1px solid var(--border);font-size:14px;vertical-align:middle;}
+  tbody tr:last-child td{border-bottom:0;}
+  tbody tr:hover{background:var(--panel-2);}
+  .desc-cell{color:var(--muted);max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+
+  .status-pill{padding:4px 10px;border-radius:20px;font-size:12px;font-weight:700;display:inline-block;}
+  .status-pending{background:var(--amber-bg);color:var(--amber);}
+  .status-accepted{background:var(--green-bg);color:var(--green);}
+  .status-denied{background:var(--red-bg);color:var(--red);}
+
+  .view-link{color:var(--green);font-weight:600;cursor:pointer;background:none;border:0;font:inherit;padding:0;}
+  .empty-row td{text-align:center;color:var(--muted);padding:36px 16px;}
+
+  .detail-label{color:var(--muted);font-size:12px;letter-spacing:.03em;margin:28px 0 10px;}
+  .detail-card{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:20px;}
+  .detail-head{display:flex;align-items:center;gap:12px;margin-bottom:16px;}
+  .avatar{
+    width:40px;height:40px;border-radius:50%;background:var(--green-bg);color:var(--green);
+    display:flex;align-items:center;justify-content:center;font-weight:700;flex-shrink:0;
+  }
+  .detail-name{font-weight:700;font-size:15px;}
+  .detail-meta{color:var(--muted);font-size:12px;}
+  .detail-body{font-size:14px;white-space:pre-wrap;margin-bottom:20px;}
+  .detail-actions{display:flex;gap:10px;}
+  .btn{
+    border-radius:8px;padding:10px 22px;font-weight:700;font-size:14px;cursor:pointer;font-family:inherit;
+  }
+  .btn-accept{background:var(--green);border:1px solid var(--green);color:#06240f;}
+  .btn-deny{background:transparent;border:1px solid var(--red);color:var(--red);}
+  .btn-accept:disabled,.btn-deny:disabled{opacity:.4;cursor:not-allowed;}
+  .resolved-note{font-size:13px;color:var(--muted);}
+
+  /* admin gate */
+  .gate{max-width:340px;margin:80px auto;text-align:center;}
+  .gate input{
+    width:100%;background:var(--panel);border:1px solid var(--border);color:var(--text);
+    padding:12px 14px;border-radius:8px;font-size:14px;margin:16px 0;font-family:inherit;
+  }
+  .gate button{width:100%;background:var(--green);border:0;color:#06240f;font-weight:700;padding:12px;border-radius:8px;cursor:pointer;font-size:14px;}
+  .gate-error{color:var(--red);font-size:13px;min-height:18px;}
+  .gate p.hint{color:var(--muted);font-size:12px;}
+
+  /* submit / user view */
+  .form-card{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:22px;}
+  label{display:block;font-size:12px;color:var(--muted);margin:14px 0 6px;}
+  label:first-child{margin-top:0;}
+  input[type=text], select, textarea{
+    width:100%;background:var(--panel-2);border:1px solid var(--border);color:var(--text);
+    padding:10px 12px;border-radius:8px;font-size:14px;font-family:inherit;
+  }
+  textarea{resize:vertical;min-height:90px;}
+  .submit-row{margin-top:18px;}
+  .btn-primary{background:var(--green);border:0;color:#06240f;font-weight:700;padding:11px 24px;border-radius:8px;cursor:pointer;font-size:14px;}
+  .toast{
+    margin-top:14px;background:var(--green-bg);border:1px solid var(--green);color:var(--green);
+    padding:10px 14px;border-radius:8px;font-size:13px;
+  }
+
+  .mine-list{margin-top:28px;}
+  .mine-item{
+    background:var(--panel);border:1px solid var(--border);border-radius:10px;
+    padding:14px 16px;display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:8px;
+  }
+  .mine-item .cat{font-weight:600;font-size:13px;}
+  .mine-item .desc{color:var(--muted);font-size:12px;margin-top:2px;}
+
+  @media (max-width:640px){
+    thead{display:none;}
+    table, tbody, tr, td{display:block;width:100%;}
+    tbody tr{border-bottom:1px solid var(--border);padding:10px 0;}
+    tbody td{border-bottom:0;padding:4px 16px;}
+    .desc-cell{white-space:normal;max-width:none;}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="topnav">
+    <div class="brand">STRATA</div>
+    <div style="display:flex;align-items:center;gap:12px;">
+      <div class="navtabs">
+        <button id="tab-submit" onclick="setView('submit')">Submit a ticket</button>
+        <button id="tab-admin" onclick="setView('admin')">Admin</button>
+      </div>
+      <div class="bell-wrap">
+        <button class="bell-btn" onclick="toggleBell()">🔔<span id="bellBadge" class="bell-badge" style="display:none;"></span></button>
+        <div id="bellDropdown" class="bell-dropdown" style="display:none;"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================== SUBMIT / USER VIEW ===================== -->
+  <div id="view-submit">
+    <div class="crumb">STRATA / Support</div>
+    <h1>Get help</h1>
+    <p class="subtitle">Tell us what's going on. An admin will accept or deny your request and you'll be notified here (bell icon, top right).</p>
+
+    <div class="form-card">
+      <label>Your username</label>
+      <input type="text" id="f-username" placeholder="e.g. jaydenbuilds">
+      <label>Category</label>
+      <select id="f-category">
+        <option>Bug report</option>
+        <option>Account issue</option>
+        <option>Sponsorship</option>
+        <option>General question</option>
+      </select>
+      <label>Description</label>
+      <textarea id="f-description" placeholder="What do you need help with?"></textarea>
+      <div class="submit-row">
+        <button class="btn-primary" onclick="submitTicket()">Submit ticket</button>
+      </div>
+      <div id="submitToast"></div>
+    </div>
+
+    <div class="mine-list" id="mineList"></div>
+  </div>
+
+  <!-- ===================== ADMIN GATE ===================== -->
+  <div id="view-gate" style="display:none;">
+    <div class="gate">
+      <h1>Admin sign-in</h1>
+      <p class="subtitle">This area is restricted to Strata admins.</p>
+      <input type="text" id="gate-pass" placeholder="Admin password" onkeydown="if(event.key==='Enter')tryUnlock()">
+      <button onclick="tryUnlock()">Unlock</button>
+      <p class="gate-error" id="gate-error"></p>
+      <p class="hint">Demo password: <code>strata-admin</code> — this is a client-side placeholder, not real access control. A production build must gate this page with real server-side auth (session/JWT check on a backend), not a password compared in the browser.</p>
+    </div>
+  </div>
+
+  <!-- ===================== ADMIN VIEW ===================== -->
+  <div id="view-admin" style="display:none;">
+    <div class="crumb">STRATA / Admin / Support <span style="float:right;"><button class="view-link" onclick="logout()">Log out</button></span></div>
+    <h1>Support tickets</h1>
+    <p class="subtitle">Admin only — nobody else can see this list.</p>
+
+    <div class="pill-row" id="filterRow"></div>
+
+    <table>
+      <thead>
+        <tr><th>Name</th><th>Category</th><th>Description</th><th>Status</th><th></th></tr>
+      </thead>
+      <tbody id="ticketBody"></tbody>
+    </table>
+
+    <div id="detailSection" style="display:none;">
+      <div class="detail-label">TICKET DETAIL</div>
+      <div class="detail-card" id="detailCard"></div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  const STORAGE_KEY = 'strata_support_tickets';
+  const NOTIF_KEY = 'strata_support_notifications';
+  const ADMIN_PASSWORD = 'strata-admin';
+  const ADMIN_SESSION_KEY = 'strata_admin_authed';
+
+  function seedTickets(){
+    return [
+      {id:1, name:'jaydenbuilds', category:'Sponsorship', description:"Would love to sponsor a monthly giveaway for the community, I run a small Minecraft YouTube channel and can put up $50/mo in donation match. Let me know if this is something Strata would want to do.", status:'pending', createdAt: Date.now() - 2*3600*1000},
+      {id:2, name:'rhinox_mc', category:'Bug report', description:"Download button on my schematic doesn't do anything when I click it, tried on two different browsers.", status:'pending', createdAt: Date.now() - 5*3600*1000},
+      {id:3, name:'stormcraft22', category:'Account issue', description:"Can't change my display name, the save button just spins forever.", status:'accepted', createdAt: Date.now() - 26*3600*1000},
+      {id:4, name:'frostbyte_99', category:'General question', description:"Is there a Discord server for Strata? Couldn't find a link anywhere on the site.", status:'denied', createdAt: Date.now() - 30*3600*1000}
+    ];
+  }
+
+  function loadTickets(){
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if(!raw){
+      const seeded = seedTickets();
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(seeded));
+      return seeded;
+    }
+    try{ return JSON.parse(raw); }catch(e){ return seedTickets(); }
+  }
+  function saveTickets(list){ localStorage.setItem(STORAGE_KEY, JSON.stringify(list)); }
+
+  function loadNotifs(){
+    try{ return JSON.parse(localStorage.getItem(NOTIF_KEY)) || []; }catch(e){ return []; }
+  }
+  function saveNotifs(list){ localStorage.setItem(NOTIF_KEY, JSON.stringify(list)); }
+
+  let tickets = loadTickets();
+  let notifs = loadNotifs();
+  let currentFilter = 'all';
+  let selectedTicketId = null;
+
+  function setView(view){
+    document.getElementById('view-submit').style.display = view === 'submit' ? '' : 'none';
+    document.getElementById('tab-submit').classList.toggle('active', view === 'submit');
+    document.getElementById('tab-admin').classList.toggle('active', view === 'admin');
+
+    if(view === 'admin'){
+      if(sessionStorage.getItem(ADMIN_SESSION_KEY) === '1'){
+        document.getElementById('view-gate').style.display = 'none';
+        document.getElementById('view-admin').style.display = '';
+        renderAdmin();
+      } else {
+        document.getElementById('view-gate').style.display = '';
+        document.getElementById('view-admin').style.display = 'none';
+      }
+    } else {
+      document.getElementById('view-gate').style.display = 'none';
+      document.getElementById('view-admin').style.display = 'none';
+      renderMine();
+    }
+    closeBell();
+  }
+
+  function tryUnlock(){
+    const val = document.getElementById('gate-pass').value;
+    if(val === ADMIN_PASSWORD){
+      sessionStorage.setItem(ADMIN_SESSION_KEY, '1');
+      setView('admin');
+    } else {
+      document.getElementById('gate-error').textContent = 'Incorrect password.';
+    }
+  }
+  function logout(){
+    sessionStorage.removeItem(ADMIN_SESSION_KEY);
+    setView('submit');
+  }
+
+  function relTime(ts){
+    const mins = Math.round((Date.now()-ts)/60000);
+    if(mins < 60) return mins + 'm ago';
+    const hrs = Math.round(mins/60);
+    if(hrs < 24) return hrs + 'h ago';
+    return Math.round(hrs/24) + 'd ago';
+  }
+
+  function statusPill(status){
+    const map = {pending:['Pending','status-pending'], accepted:['Accepted','status-accepted'], denied:['Denied','status-denied']};
+    const [label, cls] = map[status];
+    return `<span class="status-pill ${cls}">${label}</span>`;
+  }
+
+  function renderAdmin(){
+    const counts = {all: tickets.length, pending:0, accepted:0, denied:0};
+    tickets.forEach(t => counts[t.status]++);
+    const filters = [['all','All'],['pending','Pending'],['accepted','Accepted'],['denied','Denied']];
+    document.getElementById('filterRow').innerHTML = filters.map(([key,label]) =>
+      `<button class="pill ${currentFilter===key?'active':''}" onclick="setFilter('${key}')">${label} (${counts[key]})</button>`
+    ).join('');
+
+    const rows = tickets.filter(t => currentFilter === 'all' || t.status === currentFilter);
+    const body = document.getElementById('ticketBody');
+    if(rows.length === 0){
+      body.innerHTML = `<tr class="empty-row"><td colspan="5">No tickets in this view.</td></tr>`;
+    } else {
+      body.innerHTML = rows.map(t => `
+        <tr>
+          <td>${escapeHtml(t.name)}</td>
+          <td>${escapeHtml(t.category)}</td>
+          <td class="desc-cell">${escapeHtml(t.description)}</td>
+          <td>${statusPill(t.status)}</td>
+          <td><button class="view-link" onclick="viewTicket(${t.id})">View</button></td>
+        </tr>
+      `).join('');
+    }
+    renderDetail();
+  }
+
+  function setFilter(key){ currentFilter = key; renderAdmin(); }
+
+  function viewTicket(id){ selectedTicketId = id; renderDetail(); }
+
+  function renderDetail(){
+    const section = document.getElementById('detailSection');
+    if(selectedTicketId === null){ section.style.display = 'none'; return; }
+    const t = tickets.find(x => x.id === selectedTicketId);
+    if(!t){ section.style.display = 'none'; return; }
+    section.style.display = '';
+    const initials = t.name.slice(0,2).toUpperCase();
+    const resolved = t.status !== 'pending';
+    document.getElementById('detailCard').innerHTML = `
+      <div class="detail-head">
+        <div class="avatar">${initials}</div>
+        <div>
+          <div class="detail-name">${escapeHtml(t.name)}</div>
+          <div class="detail-meta">${escapeHtml(t.category)} · ${relTime(t.createdAt)}</div>
+        </div>
+      </div>
+      <div class="detail-body">${escapeHtml(t.description)}</div>
+      <div class="detail-actions">
+        <button class="btn btn-accept" ${resolved?'disabled':''} onclick="decide(${t.id}, 'accepted')">Accept</button>
+        <button class="btn btn-deny" ${resolved?'disabled':''} onclick="decide(${t.id}, 'denied')">Deny</button>
+      </div>
+      ${resolved ? `<div class="resolved-note" style="margin-top:12px;">Marked ${t.status}. ${escapeHtml(t.name)} has been notified.</div>` : ''}
+    `;
+  }
+
+  function decide(id, status){
+    const t = tickets.find(x => x.id === id);
+    if(!t || t.status !== 'pending') return;
+    t.status = status;
+    saveTickets(tickets);
+    notifs.push({username: t.name, ticketId: t.id, category: t.category, status, read:false, ts: Date.now()});
+    saveNotifs(notifs);
+    renderAdmin();
+    updateBell();
+  }
+
+  function submitTicket(){
+    const name = document.getElementById('f-username').value.trim();
+    const category = document.getElementById('f-category').value;
+    const description = document.getElementById('f-description').value.trim();
+    const toast = document.getElementById('submitToast');
+    if(!name || !description){
+      toast.innerHTML = `<div class="toast" style="background:var(--red-bg);border-color:var(--red);color:var(--red);">Please fill in your username and description.</div>`;
+      return;
+    }
+    const id = tickets.length ? Math.max(...tickets.map(t=>t.id))+1 : 1;
+    tickets.push({id, name, category, description, status:'pending', createdAt: Date.now()});
+    saveTickets(tickets);
+    document.getElementById('f-description').value = '';
+    toast.innerHTML = `<div class="toast">Ticket submitted. We'll notify you here once an admin reviews it.</div>`;
+    renderMine();
+  }
+
+  function renderMine(){
+    const name = document.getElementById('f-username').value.trim();
+    const list = document.getElementById('mineList');
+    if(!name){ list.innerHTML = ''; return; }
+    const mine = tickets.filter(t => t.name.toLowerCase() === name.toLowerCase());
+    if(mine.length === 0){ list.innerHTML = ''; return; }
+    list.innerHTML = `<div class="detail-label">YOUR TICKETS</div>` + mine.map(t => `
+      <div class="mine-item">
+        <div>
+          <div class="cat">${escapeHtml(t.category)}</div>
+          <div class="desc">${escapeHtml(t.description.slice(0,80))}${t.description.length>80?'…':''}</div>
+        </div>
+        ${statusPill(t.status)}
+      </div>
+    `).join('');
+    updateBell();
+  }
+  document.getElementById('f-username').addEventListener('input', renderMine);
+
+  function updateBell(){
+    const name = document.getElementById('f-username').value.trim().toLowerCase();
+    const badge = document.getElementById('bellBadge');
+    if(!name){ badge.style.display = 'none'; return; }
+    const unread = notifs.filter(n => n.username.toLowerCase() === name && !n.read);
+    if(unread.length > 0){
+      badge.style.display = 'flex';
+      badge.textContent = unread.length;
+    } else {
+      badge.style.display = 'none';
+    }
+  }
+
+  function toggleBell(){
+    const dd = document.getElementById('bellDropdown');
+    if(dd.style.display === 'none'){ openBell(); } else { closeBell(); }
+  }
+  function openBell(){
+    const name = document.getElementById('f-username').value.trim().toLowerCase();
+    const dd = document.getElementById('bellDropdown');
+    const mine = notifs.filter(n => n.username.toLowerCase() === name).sort((a,b)=>b.ts-a.ts);
+    if(!name){
+      dd.innerHTML = `<div class="notif-empty">Enter your username on the Submit a ticket page to see notifications.</div>`;
+    } else if(mine.length === 0){
+      dd.innerHTML = `<div class="notif-empty">No notifications yet.</div>`;
+    } else {
+      dd.innerHTML = `<h4>Notifications</h4>` + mine.map(n => `
+        <div class="notif-item ${n.read?'':'unread'}">
+          Your <strong>${escapeHtml(n.category)}</strong> ticket was
+          <strong style="color:${n.status==='accepted'?'var(--green)':'var(--red)'}">${n.status}</strong>.
+          <div style="color:var(--muted);font-size:11px;margin-top:2px;">${relTime(n.ts)}</div>
+        </div>
+      `).join('');
+      mine.forEach(n => n.read = true);
+      saveNotifs(notifs);
+    }
+    dd.style.display = '';
+    updateBell();
+  }
+  function closeBell(){ document.getElementById('bellDropdown').style.display = 'none'; }
+  document.addEventListener('click', (e) => {
+    if(!e.target.closest('.bell-wrap')) closeBell();
+  });
+
+  function escapeHtml(str){
+    const d = document.createElement('div');
+    d.textContent = str;
+    return d.innerHTML;
+  }
+
+  setView('submit');
+</script>
+</body>
+</html>
