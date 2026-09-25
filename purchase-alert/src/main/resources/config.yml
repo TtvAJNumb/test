@@ -1,0 +1,22 @@
+# PurchaseAlert configuration
+#
+# This plugin never touches StoreBridge itself - no shared files, no reflection into its
+# classes, no calls to the endpoints that actually claim or deliver an order. It only makes its
+# own separate, read-only HTTP requests to the same backend StoreBridge already talks to, using
+# the exact same endpoint StoreBridge's own "/storebridge orders" admin command reads from. It
+# cannot affect delivery, retries, or anything else StoreBridge does.
+
+# Copy these two values from StoreBridge's own config.yml - same backend, same key. This plugin
+# only ever GETs a read-only order list with it; it never calls the claim/deliver endpoints.
+backend_url: ""
+plugin_key: ""
+
+# How often (seconds) to check for newly delivered purchases.
+poll_interval_seconds: 15
+
+# How many recent orders to fetch each check.
+order_limit: 10
+
+discord:
+  webhook-url: ""
+  username: "Store Purchases"

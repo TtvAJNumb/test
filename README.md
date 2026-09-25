@@ -1,14 +1,15 @@
 # DonutSMP staff add-ons
 
-Two Bukkit/Paper plugins built to sit alongside three plugins you already run:
-**UltimateDonutSmp** (the SMP core), **CrateBindAddon** (a small addon to it), and **GrimAC**
-(anticheat). This file explains how those three existing plugins work, then documents the two
-new ones and exactly how each hooks into them.
+Three Bukkit/Paper plugins built to sit alongside plugins you already run: **UltimateDonutSmp**
+(the SMP core), **CrateBindAddon** (a small addon to it), **GrimAC** (anticheat), and
+**StoreBridge** (delivers your web-store purchases in-game). This file explains how those
+existing plugins work, then documents the new ones and exactly how each hooks into them.
 
-Both new plugins are independent Maven modules under this repo's root `pom.xml`:
+All three new plugins are independent Maven modules under this repo's root `pom.xml`:
 
 - `punishment-history-gui/` — **PunishmentHistoryGUI**
 - `economy-watchdog/` — **EconomyWatchdog**
+- `purchase-alert/` — **PurchaseAlert**
 
 Built jars are in `dist/` — see **Getting the jars** at the bottom for how they were produced
 and verified, since this sandbox can't reach `repo.papermc.io` to run a normal `mvn package`.
@@ -87,6 +88,26 @@ implementations live under `ac.grim.grimac.checks.impl`, organized by category (
 movement, exploit, etc.), each reporting through that event bus. Neither of the two plugins here
 needed to touch GrimAC, so nothing integrates with it — but if you ever want a "cheater alert"
 bot, it's the one of the three with an actual documented extension API instead of reflection.
+
+### StoreBridge.jar
+
+A small (23-class, unobfuscated), clean plugin: `dev.storebridge`. Its whole job is polling
+**your own backend** (hosted on Vercel, per its own config-validation message — the address you
+put in `backend_url`) every few seconds for orders your Stripe-backed web store has taken, then
+running whatever console commands you configured per product to deliver the purchase.
+
+The flow: `Poller` calls `POST /api/plugin/claim` on your backend for a batch of pending orders,
+each parsed into a `Job` record (`id`, `event` — one of `initial`/`renewal`/`expiry`/`chargeback`
+— `uuid`, `username`, `product`). `Executor` looks up the commands configured for that
+product+event in `config.yml`, runs them through the placeholders `{player}`/`{uuid}`/`{product}`,
+and reports back to your backend via `POST /api/plugin/complete` with a result of `delivered` or
+`failed`. A local `Journal` file tracks in-progress jobs so a server restart mid-delivery doesn't
+silently double-run or lose a command.
+
+Two things worth knowing: **there is no price/dollar-amount field anywhere in this plugin** — it
+only ever needs to know *what* to deliver, never *how much was paid*, so that stays entirely in
+your backend/Stripe. And it already has a read-only `GET /api/plugin/orders` endpoint it calls
+for its own `/storebridge orders` admin command — that's the one PurchaseAlert (below) reuses.
 
 ---
 
@@ -199,14 +220,47 @@ otherwise notice from logs.
 
 ---
 
-## Design notes that apply to both plugins
+## 4. PurchaseAlert
+
+**Command:** `/purchasealert <reload|test|status>` (permission `purchasealert.admin`).
+**Config file:** `plugins/PurchaseAlert/config.yml` — `backend_url` and `plugin_key` (copy the
+same two values from StoreBridge's own `config.yml`), plus `discord.webhook-url`.
+
+### What it does
+
+Posts a Discord embed — *"PlayerX just purchased **product_id**!"* — the moment a store order
+finishes delivering.
+
+### How it integrates — and why it can't affect StoreBridge
+
+StoreBridge has no event, no public API, and no price field anywhere (see above) — so this
+doesn't hook into StoreBridge at all. It calls your backend directly, using the **same read-only
+endpoint** (`GET /api/plugin/orders`) that StoreBridge's own `/storebridge orders` admin command
+already reads from, with the same `Authorization: Bearer <plugin_key>` header StoreBridge itself
+sends (confirmed straight from its decompiled `HttpTransport` class). It polls that endpoint on
+its own separate schedule, keeps its own separate "already announced" list in memory, and never
+calls the `claim`/`complete` endpoints that actually move an order through delivery. Two
+completely independent plugins reading the same data — StoreBridge can be updated, restarted, or
+removed entirely without this plugin knowing or caring, and vice versa.
+
+**The trade-off, stated plainly:** since that endpoint has no price field, the alert can say who
+bought what, but not how much they paid. If your backend's raw API response actually includes a
+price your Vercel code just isn't using elsewhere, that could be added — I'd need to see that
+endpoint's real JSON to wire it up rather than guess at a field name.
+
+---
+
+## Design notes that apply to all three plugins
 
 - Every UDS integration goes through a small `reflect/UdsBridge.java` per plugin, resolved once
   on `onEnable()` — if UDS's method shapes have changed, the plugin logs why and disables itself
-  cleanly instead of throwing NPEs later, exactly like CrateBindAddon does.
-- Neither plugin adds a hard compile-time dependency on UltimateDonutSmp's jar — only
+  cleanly instead of throwing NPEs later, exactly like CrateBindAddon does. (PurchaseAlert doesn't
+  need this — it never touches UDS or StoreBridge's classes, only HTTP.)
+- None of the three add a hard compile-time dependency on another plugin's jar — only
   `org.bukkit`/Paper API classes are compiled against (`provided` scope), matching how
-  CrateBindAddon itself is built.
+  CrateBindAddon itself is built. PurchaseAlert's JSON parsing uses `com.google.gson`, which ships
+  bundled with every Spigot/Paper server jar already (Minecraft itself depends on it), so that's
+  not an extra dependency either.
 - Local storage (staff notes) is plain `YamlConfiguration` files under the plugin's own data
   folder — no bundled database driver, so each plugin is a single drop-in jar.
 
@@ -214,10 +268,11 @@ otherwise notice from logs.
 
 Built jars are checked into **`dist/`**:
 
-- `dist/PunishmentHistoryGUI-1.0.0.jar`
+- `dist/PunishmentHistoryGUI-1.0.2.jar`
 - `dist/EconomyWatchdog-1.0.0.jar`
+- `dist/PurchaseAlert-1.0.0.jar`
 
-Drop either straight into your server's `plugins/` folder alongside UltimateDonutSmp.
+Drop whichever you need into your server's `plugins/` folder.
 
 ### How they were built without network access to Paper's repo
 

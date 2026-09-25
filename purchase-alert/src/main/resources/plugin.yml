@@ -1,0 +1,19 @@
+name: PurchaseAlert
+version: ${project.version}
+main: com.donututils.purchasealert.PurchaseAlertPlugin
+api-version: "1.21"
+folia-supported: false
+description: Posts a Discord alert whenever StoreBridge delivers a new store purchase, by independently polling the same backend's read-only order list. Never touches StoreBridge itself.
+authors: [donututils]
+softdepend:
+  - StoreBridge
+commands:
+  purchasealert:
+    description: Manage PurchaseAlert.
+    usage: /purchasealert <reload|test|status>
+    permission: purchasealert.admin
+    permission-message: "&cYou do not have permission to manage PurchaseAlert."
+permissions:
+  purchasealert.admin:
+    description: Allows reloading PurchaseAlert and sending test alerts
+    default: op

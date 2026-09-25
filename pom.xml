@@ -12,6 +12,7 @@
     <modules>
         <module>punishment-history-gui</module>
         <module>economy-watchdog</module>
+        <module>purchase-alert</module>
     </modules>
 
     <properties>
