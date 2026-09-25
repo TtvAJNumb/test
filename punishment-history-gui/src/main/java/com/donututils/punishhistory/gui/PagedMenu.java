@@ -8,6 +8,8 @@ import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.util.List;
 import java.util.function.Consumer;
 
@@ -19,6 +21,12 @@ import java.util.function.Consumer;
  * Adventure-{@code Component} overloads - those are unchanged across every Spigot/Paper version
  * back to 1.8, so this menu can't break on a server whose exact Paper build wasn't the one this
  * was tested against.
+ * <p>
+ * {@code Player#openInventory(Inventory)} is called reflectively for the same reason: its
+ * return type has changed across Bukkit/Paper history (void on older builds, {@code
+ * InventoryView} on some newer ones), and a compiled call site bakes in one exact return type.
+ * Resolving it by name/parameter-types only and ignoring the return value works on every build
+ * regardless of which one that server actually has.
  */
 public final class PagedMenu {
 
@@ -40,7 +48,19 @@ public final class PagedMenu {
         holder.setActions(actions);
         holder.setBackAction(backAction);
         render(holder, 0);
-        player.openInventory(inventory);
+        openInventorySafely(player, inventory);
+    }
+
+    private static void openInventorySafely(Player player, Inventory inventory) {
+        try {
+            Method method = player.getClass().getMethod("openInventory", Inventory.class);
+            method.invoke(player, inventory);
+        } catch (NoSuchMethodException | IllegalAccessException ex) {
+            throw new IllegalStateException("Could not find a way to open an inventory on this server: " + ex, ex);
+        } catch (InvocationTargetException ex) {
+            Throwable cause = ex.getCause() != null ? ex.getCause() : ex;
+            throw new IllegalStateException("Opening the menu inventory failed: " + cause, cause);
+        }
     }
 
     public static void render(PunishMenuHolder holder, int page) {

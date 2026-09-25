@@ -11,7 +11,7 @@
     </parent>
 
     <artifactId>punishment-history-gui</artifactId>
-    <version>1.0.1</version>
+    <version>1.0.2</version>
     <packaging>jar</packaging>
 
     <dependencies>
@@ -23,7 +23,7 @@
     </dependencies>
 
     <build>
-        <finalName>PunishmentHistoryGUI-1.0.1</finalName>
+        <finalName>PunishmentHistoryGUI-1.0.2</finalName>
         <resources>
             <resource>
                 <directory>src/main/resources</directory>
