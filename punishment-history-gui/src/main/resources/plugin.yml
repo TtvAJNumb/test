@@ -1,0 +1,31 @@
+name: PunishmentHistoryGUI
+version: ${project.version}
+main: com.donututils.punishhistory.PunishmentHistoryPlugin
+api-version: "1.21"
+folia-supported: false
+description: One menu for a player's bans, mutes, warns and staff notes, built on UltimateDonutSmp's PunishmentManager.
+authors: [donututils]
+depend:
+  - UltimateDonutSmp
+commands:
+  punishhistory:
+    description: Browse punishment history in a menu (roster, or a specific player).
+    usage: /punishhistory [player]
+    aliases: [phistory, pgui]
+    permission: ultimatedonutsmp.staff.punishments.view
+    permission-message: "&cYou do not have permission to view punishment history."
+  note:
+    description: Manage staff notes on a player.
+    usage: /note <add|remove|list> <player> [text|index]
+    permission: punishmenthistorygui.notes.view
+    permission-message: "&cYou do not have permission to manage staff notes."
+permissions:
+  punishmenthistorygui.notes.view:
+    description: Allows listing staff notes on a player
+    default: op
+  punishmenthistorygui.notes.add:
+    description: Allows adding a staff note to a player
+    default: op
+  punishmenthistorygui.notes.remove:
+    description: Allows removing a staff note from a player
+    default: op

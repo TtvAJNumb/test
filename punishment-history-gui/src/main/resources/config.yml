@@ -1,0 +1,12 @@
+# PunishmentHistoryGUI configuration
+
+# How many distinct players to scan UltimateDonutSmp's punishment log for when
+# building the roster menu (most recently actioned first).
+roster-scan-size: 200
+
+# Max staff notes kept per player (oldest are dropped once the cap is hit).
+max-notes-per-player: 50
+
+gui:
+  roster-title: "&5&lPunishment Roster"
+  detail-title: "&5&lHistory: %player%"

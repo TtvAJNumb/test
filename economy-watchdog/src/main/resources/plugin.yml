@@ -1,0 +1,19 @@
+name: EconomyWatchdog
+version: ${project.version}
+main: com.donututils.ecowatch.EconomyWatchdogPlugin
+api-version: "1.21"
+folia-supported: false
+description: Watches UltimateDonutSmp's economy and auction house for suspicious balance jumps, large /pay transfers and odd auction sales, and posts alerts to a Discord webhook.
+authors: [donututils]
+depend:
+  - UltimateDonutSmp
+commands:
+  ecowatch:
+    description: Manage EconomyWatchdog.
+    usage: /ecowatch <reload|test|status>
+    permission: economywatchdog.admin
+    permission-message: "&cYou do not have permission to manage EconomyWatchdog."
+permissions:
+  economywatchdog.admin:
+    description: Allows reloading EconomyWatchdog and sending test alerts
+    default: op

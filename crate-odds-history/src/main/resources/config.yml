@@ -1,0 +1,17 @@
+# CrateOddsHistory configuration
+
+# How many past openings to remember per player.
+history-size: 20
+
+# How long (in ticks, 20 = 1 second) to keep watching a player after they right-click
+# a bound crate block before giving up on seeing a result. Covers the gacha/spin
+# animation time for slower crate types.
+watch-timeout-ticks: 600
+
+# How often (in ticks) to poll a watched player's crate session for a result.
+poll-interval-ticks: 2
+
+gui:
+  odds-title: "&6&lCrate Odds"
+  history-title: "&6&lCrate History"
+  rows: 6

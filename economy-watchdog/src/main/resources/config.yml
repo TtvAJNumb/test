@@ -1,0 +1,36 @@
+# EconomyWatchdog configuration
+#
+# This plugin has no official hooks into UltimateDonutSmp's economy or auction house - UDS
+# fires no events for balance changes, /pay, or auction sales, and keeps no transaction log.
+# Everything here is detected by polling and by watching command input, which means it is a
+# best-effort heuristic tool, not a guaranteed audit trail. Tune the thresholds for your economy.
+
+discord:
+  webhook-url: ""
+  username: "Economy Watchdog"
+
+# How often (in seconds) to poll online players' balances and the auction house cache.
+poll-interval-seconds: 60
+
+balance-jump:
+  enabled: true
+  # Flag if a player's balance changes by at least this much between two polls...
+  min-absolute-delta: 100000.0
+  # ...OR grows by at least this percentage of its previous value (ignored if previous balance is 0).
+  min-percent-delta: 300.0
+
+large-transfer:
+  # Watches /pay <player> <amount> as it's typed and flags large attempted transfers.
+  enabled: true
+  min-amount: 100000.0
+
+auction:
+  enabled: true
+  # Flag a completed sale at or above this price.
+  high-price-flag: 1000000.0
+  # Flag a completed sale at or below this price (penny-dumping between alts).
+  low-price-flag: 1.0
+  repeat-trading:
+    enabled: true
+    window-minutes: 10
+    min-trades: 3
