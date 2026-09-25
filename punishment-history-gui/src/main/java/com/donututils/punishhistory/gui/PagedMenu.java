@@ -1,8 +1,7 @@
 package com.donututils.punishhistory.gui;
 
-import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import org.bukkit.Bukkit;
+import org.bukkit.ChatColor;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.Inventory;
@@ -12,7 +11,15 @@ import org.bukkit.inventory.meta.ItemMeta;
 import java.util.List;
 import java.util.function.Consumer;
 
-/** Shared paginator for the roster and detail menus: rows 1-5 content, row 6 controls. */
+/**
+ * Shared paginator for the roster and detail menus: rows 1-5 content, row 6 controls.
+ * <p>
+ * Deliberately uses the classic String-based {@code Bukkit.createInventory}/{@code ItemMeta}
+ * methods (via {@link ChatColor#translateAlternateColorCodes}) instead of the newer
+ * Adventure-{@code Component} overloads - those are unchanged across every Spigot/Paper version
+ * back to 1.8, so this menu can't break on a server whose exact Paper build wasn't the one this
+ * was tested against.
+ */
 public final class PagedMenu {
 
     public static final int PAGE_SIZE = 45;
@@ -71,13 +78,13 @@ public final class PagedMenu {
         ItemStack item = new ItemStack(material);
         ItemMeta meta = item.getItemMeta();
         if (meta != null) {
-            meta.displayName(legacy(name));
+            meta.setDisplayName(legacy(name));
             item.setItemMeta(meta);
         }
         return item;
     }
 
-    public static Component legacy(String text) {
-        return LegacyComponentSerializer.legacyAmpersand().deserialize(text);
+    public static String legacy(String text) {
+        return ChatColor.translateAlternateColorCodes('&', text);
     }
 }

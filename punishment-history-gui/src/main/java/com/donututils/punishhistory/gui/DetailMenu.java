@@ -5,7 +5,6 @@ import com.donututils.punishhistory.model.Note;
 import com.donututils.punishhistory.model.PunishmentSnapshot;
 import com.donututils.punishhistory.notes.NoteStore;
 import com.donututils.punishhistory.reflect.UdsBridge;
-import net.kyori.adventure.text.Component;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
@@ -74,9 +73,9 @@ public final class DetailMenu {
         ItemStack item = new ItemStack(iconFor(snapshot.type()));
         ItemMeta meta = item.getItemMeta();
         if (meta != null) {
-            meta.displayName(PagedMenu.legacy(colorFor(snapshot.type()) + snapshot.displayType()));
+            meta.setDisplayName(PagedMenu.legacy(colorFor(snapshot.type()) + snapshot.displayType()));
 
-            List<Component> lore = new ArrayList<>();
+            List<String> lore = new ArrayList<>();
             lore.add(PagedMenu.legacy("&eReason: &f" + snapshot.reason()));
             lore.add(PagedMenu.legacy("&eBy: &f" + snapshot.issuerName()));
             lore.add(PagedMenu.legacy("&eState: &f" + snapshot.state()));
@@ -88,7 +87,7 @@ public final class DetailMenu {
                 lore.add(PagedMenu.legacy("&eRemoval reason: &f" + snapshot.removalReason()));
             }
             lore.add(PagedMenu.legacy("&7" + FORMAT.format(Instant.ofEpochMilli(snapshot.issuedAt()))));
-            meta.lore(lore);
+            meta.setLore(lore);
 
             item.setItemMeta(meta);
         }
@@ -99,13 +98,13 @@ public final class DetailMenu {
         ItemStack item = new ItemStack(Material.PAPER);
         ItemMeta meta = item.getItemMeta();
         if (meta != null) {
-            meta.displayName(PagedMenu.legacy("&bStaff Note"));
+            meta.setDisplayName(PagedMenu.legacy("&bStaff Note"));
 
-            List<Component> lore = new ArrayList<>();
+            List<String> lore = new ArrayList<>();
             lore.add(PagedMenu.legacy("&f" + note.text()));
             lore.add(PagedMenu.legacy("&eBy: &f" + note.authorName()));
             lore.add(PagedMenu.legacy("&7" + FORMAT.format(Instant.ofEpochMilli(note.timestamp()))));
-            meta.lore(lore);
+            meta.setLore(lore);
 
             item.setItemMeta(meta);
         }
@@ -116,7 +115,7 @@ public final class DetailMenu {
         ItemStack item = new ItemStack(Material.BARRIER);
         ItemMeta meta = item.getItemMeta();
         if (meta != null) {
-            meta.displayName(PagedMenu.legacy("&aNo punishments or notes on file"));
+            meta.setDisplayName(PagedMenu.legacy("&aNo punishments or notes on file"));
             item.setItemMeta(meta);
         }
         return item;

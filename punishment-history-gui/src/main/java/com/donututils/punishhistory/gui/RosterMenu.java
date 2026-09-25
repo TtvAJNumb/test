@@ -5,7 +5,6 @@ import com.donututils.punishhistory.model.RosterEntry;
 import com.donututils.punishhistory.notes.NoteStore;
 import com.donututils.punishhistory.reflect.UdsBridge;
 import com.donututils.punishhistory.roster.RosterBuilder;
-import net.kyori.adventure.text.Component;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
@@ -61,9 +60,9 @@ public final class RosterMenu {
         ItemMeta rawMeta = head.getItemMeta();
         if (rawMeta instanceof SkullMeta meta) {
             meta.setOwningPlayer(Bukkit.getOfflinePlayer(entry.uuid()));
-            meta.displayName(PagedMenu.legacy("&f" + entry.name()));
+            meta.setDisplayName(PagedMenu.legacy("&f" + entry.name()));
 
-            List<Component> lore = new ArrayList<>();
+            List<String> lore = new ArrayList<>();
             lore.add(PagedMenu.legacy("&ePunishments (recent window): &f" + entry.punishmentCount()));
             lore.add(PagedMenu.legacy("&eStaff notes: &f" + entry.noteCount()));
             if (entry.lastActivity() > 0) {
@@ -71,7 +70,7 @@ public final class RosterMenu {
             }
             lore.add(PagedMenu.legacy(" "));
             lore.add(PagedMenu.legacy("&aClick to view full history"));
-            meta.lore(lore);
+            meta.setLore(lore);
             head.setItemMeta(meta);
         }
         return head;
@@ -81,7 +80,7 @@ public final class RosterMenu {
         ItemStack item = new ItemStack(Material.BARRIER);
         ItemMeta meta = item.getItemMeta();
         if (meta != null) {
-            meta.displayName(PagedMenu.legacy("&aNo punishment history or staff notes yet"));
+            meta.setDisplayName(PagedMenu.legacy("&aNo punishment history or staff notes yet"));
             item.setItemMeta(meta);
         }
         return item;
