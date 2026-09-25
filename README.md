@@ -1,19 +1,17 @@
 # DonutSMP staff add-ons
 
-Three new Bukkit/Paper plugins built to sit alongside three plugins you already run:
+Two Bukkit/Paper plugins built to sit alongside three plugins you already run:
 **UltimateDonutSmp** (the SMP core), **CrateBindAddon** (a small addon to it), and **GrimAC**
-(anticheat). This file explains how those three existing plugins work, then documents the
-three new ones and exactly how each hooks into them.
+(anticheat). This file explains how those three existing plugins work, then documents the two
+new ones and exactly how each hooks into them.
 
-All three new plugins are independent Maven modules under this repo's root `pom.xml`:
+Both new plugins are independent Maven modules under this repo's root `pom.xml`:
 
-- `crate-odds-history/` — **CrateOddsHistory**
 - `punishment-history-gui/` — **PunishmentHistoryGUI**
 - `economy-watchdog/` — **EconomyWatchdog**
 
-Build with `mvn package` from the repo root (see **Building** at the bottom — this sandbox
-could not reach `repo.papermc.io` to fetch the Paper API, so the build has not been run here;
-see that section for what was verified instead).
+Built jars are in `dist/` — see **Getting the jars** at the bottom for how they were produced
+and verified, since this sandbox can't reach `repo.papermc.io` to run a normal `mvn package`.
 
 ---
 
@@ -44,19 +42,11 @@ reflection — see next).
 
 Two things mattered most for the new plugins:
 
-- **Crates** (`managers/CrateManager`): a crate is a `CrateDefinition` record holding a list of
-  `CrateReward`s, each with a `weight` (its lottery ticket count) and a `GrantDefinition`
-  (`ITEM` / `COMMAND` / `MONEY` / `SHARDS`). Drop chance = `weight / sum(all positive weights)`.
-  While a player is mid-open, `CrateManager.getSession(uuid)` exposes a `CrateOpenSession` with
-  the crate and the `selectedReward` once the roll lands. **There is no persisted log of past
-  crate opens anywhere in UDS** — only current key balances (`player_crate_keys` table) and
-  which physical blocks are bound to which crate (`crate_blocks` table, read via
-  `getBoundCrateId(Block)`). That gap is exactly what CrateOddsHistory fills.
-- **Punishments** (`managers/PunishmentManager` + `models/PunishmentRecord`): this one *is*
-  fully logged — bans, mutes, voice-mutes, warns, kicks and blacklists are all persisted with
-  issuer, reason, timestamps, expiry and removal metadata, and queryable per-player
-  (`getHistory`) or server-wide (`getAll`, paginated, with search). There is **no "note" concept**
-  at all — the enum is `BAN, MUTE, VOICE_MUTE, WARN, KICK, BLACKLIST`, nothing else.
+- **Punishments** (`managers/PunishmentManager` + `models/PunishmentRecord`): fully logged —
+  bans, mutes, voice-mutes, warns, kicks and blacklists are all persisted with issuer, reason,
+  timestamps, expiry and removal metadata, and queryable per-player (`getHistory`) or
+  server-wide (`getAll`, paginated, with search). There is **no "note" concept** at all — the
+  enum is `BAN, MUTE, VOICE_MUTE, WARN, KICK, BLACKLIST`, nothing else.
 - **Economy & auctions** (`managers/EconomyManager`, `managers/AuctionHouseManager`): balances
   support deposit/withdraw/setBalance/transfer, each tagged with an `EconomyReason` enum (shop
   purchase, pay, auction fee, bounty, etc.) — but **that reason is never written anywhere**;
@@ -66,8 +56,8 @@ Two things mattered most for the new plugins:
   the public API only exposes filtered views of (`getActiveListings`, `getPlayerListings`, etc.)
   — there's no public "give me recent sales" method.
 - It also has its own `DiscordWebhookManager`, `PunishmentHistoryMenu`/`PunishmentsListMenu`
-  GUIs, and `AuctionHouseBrowseMenu` etc. — none of that is reused directly by the new plugins
-  (see the design notes under each plugin below for why).
+  GUIs, `CrateManager` (crate definitions/rewards/odds), and `AuctionHouseBrowseMenu` etc. — none
+  of that is reused directly by the two plugins below (see the design notes under each for why).
 
 ### CrateBindAddon.jar
 
@@ -81,10 +71,8 @@ on UDS's `CrateManager` purely by reflection (`getCrate`, `isBindableBlock`, `ge
 expects, it catches `ReflectiveOperationException` on enable and disables itself with a clear
 log message rather than throwing later.
 
-So "CrateBindAddon's bind data" **is** UltimateDonutSmp's own `crate_blocks` table — the addon
-doesn't add a database of its own, it's a thin command UI over UDS's existing bind API. This
-reflection-bridge pattern (resolve methods once on enable, disable cleanly if they've moved) is
-exactly what all three new plugins below copy.
+This reflection-bridge pattern (resolve methods once on enable, disable cleanly if they've
+moved) is exactly what both new plugins below copy.
 
 ### grimac-bukkit-2.3.74-5920e74.jar
 
@@ -96,58 +84,22 @@ the other two, it ships a real, deliberately-designed public API package
 even a full pluggable storage layer (`ac.grim.grimac.api.storage.*` — backends, migrations,
 history/violation queries) for building dashboards or bots on top of check history. 135+ check
 implementations live under `ac.grim.grimac.checks.impl`, organized by category (combat,
-movement, exploit, etc.), each reporting through that event bus. None of the three requested
-plugins needed to touch GrimAC, so nothing here integrates with it — but if you ever want a
-"cheater alert" bot, it's the one of the three with an actual documented extension API instead
-of reflection.
+movement, exploit, etc.), each reporting through that event bus. Neither of the two plugins here
+needed to touch GrimAC, so nothing integrates with it — but if you ever want a "cheater alert"
+bot, it's the one of the three with an actual documented extension API instead of reflection.
 
 ---
 
-## 2. CrateOddsHistory
-
-**Commands:** `/crateodds <crate>` (odds menu), `/cratehistory [player]` (history menu).
-**Permissions:** `crateoddshistory.odds` (default true), `crateoddshistory.history` (default
-true), `crateoddshistory.history.others` (default op).
-
-### What it shows
-
-- `/crateodds <crate>` opens a paginated inventory menu listing every reward in that crate with
-  its actual chance (`weight / sum of positive weights`, computed live from
-  `CrateManager.CrateDefinition` — never hand-maintained, so it can't drift from what UDS
-  actually rolls).
-- `/cratehistory [player]` opens a paginated inventory of that player's last N crate openings
-  (`history-size` in config, default 20), newest first — crate, what they got, the odds at the
-  time, and when.
-
-### How it integrates
-
-Read **How UDS's crate data works** above: UDS keeps no log of past opens. So this plugin:
-
-1. Uses the same reflection bridge pattern as CrateBindAddon (`reflect/UdsBridge.java`) to call
-   `CrateManager.getBoundCrateId(Block)` — literally the same call CrateBindAddon's `BindListener`
-   uses — to recognize when a player right-clicks a block CrateBindAddon has bound to a crate.
-2. From that moment, it polls `CrateManager.getSession(uuid)` every `poll-interval-ticks` (default
-   2, i.e. 100ms) until `CrateOpenSession#selectedReward()` becomes non-null (the roll landed) or
-   `watch-timeout-ticks` elapses (default 600 = 30s, covering slow gacha animations).
-3. The instant a reward appears, it's resolved back into a display name, grant summary and the
-   live odds for that reward, and appended to `plugins/CrateOddsHistory/history/<uuid>.yml`,
-   trimmed to `history-size` entries.
-
-This is a **best-effort heuristic**, not a hook UDS provides — it's polling a private session
-object, not consuming an event. It's honest about that limitation: see the class doc on
-`OpenWatcher`. If a player closes out of the crate GUI before rolling, or the session is cleared
-before the first poll lands, nothing is recorded — there's no false data, just occasional
-missed entries.
-
----
-
-## 3. PunishmentHistoryGUI
+## 2. PunishmentHistoryGUI
 
 **Commands:** `/punishhistory [player]` (aliases `/phistory`, `/pgui`), `/note <add|remove|list>
 <player> [text|index]`.
 **Permission for `/punishhistory`:** UDS's own `ultimatedonutsmp.staff.punishments.view` (so
 whoever can already see punishments in-game can use this menu too, with no extra config).
 **Note permissions:** `punishmenthistorygui.notes.{view,add,remove}` (default op).
+**Config file:** `plugins/PunishmentHistoryGUI/config.yml` (menu titles, roster scan size, notes
+cap per player) — created automatically on first run, edit and `/punishhistory` again or restart
+to apply (no Discord webhook here; that's only in EconomyWatchdog).
 
 ### What it shows
 
@@ -177,10 +129,13 @@ roster) rather than a reuse of its actual code.
 
 ---
 
-## 4. EconomyWatchdog
+## 3. EconomyWatchdog
 
 **Command:** `/ecowatch <reload|test|status>` (permission `economywatchdog.admin`).
-**Config:** `discord.webhook-url`, plus independently-tunable thresholds for each detector.
+**Config file:** `plugins/EconomyWatchdog/config.yml` — this is where you paste your Discord
+webhook URL (`discord.webhook-url`) and tune every threshold below. `/ecowatch reload` picks up
+changes without a restart; `/ecowatch test` sends a sample alert so you can confirm the webhook
+is wired up correctly; `/ecowatch status` just tells you whether a webhook URL is set.
 
 ### What it does
 
@@ -199,6 +154,9 @@ Posts Discord embeds (via a plain webhook, JDK `HttpClient`, no extra dependency
    `repeat-trading.min-trades`+ trades within `repeat-trading.window-minutes` (a common
    dupe/RMT-laundering pattern between two accounts).
 
+Every one of those three detectors has its own `enabled: true/false` switch in config.yml, so
+you can turn any of them off independently.
+
 ### Why it's built this way — and its real limits
 
 **UDS fires no events for any of this.** There's no `EconomyTransactionEvent`, no
@@ -206,10 +164,10 @@ Posts Discord embeds (via a plain webhook, JDK `HttpClient`, no extra dependency
 query either. So every detector here is either polling public getters
 (`EconomyManager.getBalance`) or watching command input the way CrateBindAddon already does —
 except one: there's no public method at all for "recently sold auction listings", so
-`reflect/UdsBridge.java` reaches one level deeper than the other two plugins do, and reflects a
+`reflect/UdsBridge.java` reaches one level deeper than PunishmentHistoryGUI does, and reflects a
 **private field** (`AuctionHouseManager#listingCache`) that the public `getActiveListings(...)`
 method itself filters down from. That's flagged clearly in that class's Javadoc as the one place
-in all three plugins that isn't just "call a public method reflectively" — it's the most likely
+in either plugin that isn't just "call a public method reflectively" — it's the most likely
 thing to need a small fix if a future UDS update reshapes that class internally, and the plugin
 degrades gracefully (logs a warning, skips that poll) rather than crashing if it does.
 
@@ -228,31 +186,65 @@ watched. It should still catch the obvious cases (a player's balance suddenly 10
 `/pay` to a brand-new alt, an enchanted netherite sword "sold" for $1) well before staff would
 otherwise notice from logs.
 
+### Setting up the Discord webhook
+
+1. In Discord: the target channel's settings → Integrations → Webhooks → New Webhook → copy its
+   URL.
+2. Drop the jar in `plugins/`, start the server once (so it generates `config.yml`), stop it (or
+   use `/ecowatch reload` if you'd rather not restart).
+3. Open `plugins/EconomyWatchdog/config.yml`, paste the URL into `discord.webhook-url`, adjust
+   `discord.username` and any thresholds under `balance-jump` / `large-transfer` / `auction` to
+   taste.
+4. `/ecowatch reload`, then `/ecowatch test` to confirm an embed shows up in that channel.
+
 ---
 
-## Design notes that apply to all three
+## Design notes that apply to both plugins
 
 - Every UDS integration goes through a small `reflect/UdsBridge.java` per plugin, resolved once
   on `onEnable()` — if UDS's method shapes have changed, the plugin logs why and disables itself
   cleanly instead of throwing NPEs later, exactly like CrateBindAddon does.
-- None of the three plugins add a hard compile-time dependency on UltimateDonutSmp's jar — only
+- Neither plugin adds a hard compile-time dependency on UltimateDonutSmp's jar — only
   `org.bukkit`/Paper API classes are compiled against (`provided` scope), matching how
   CrateBindAddon itself is built.
-- All local storage (crate history, staff notes) is plain `YamlConfiguration` files under each
-  plugin's own data folder — no bundled database driver, so each plugin is a single drop-in jar.
+- Local storage (staff notes) is plain `YamlConfiguration` files under the plugin's own data
+  folder — no bundled database driver, so each plugin is a single drop-in jar.
 
-## Building
+## Getting the jars
+
+Built jars are checked into **`dist/`**:
+
+- `dist/PunishmentHistoryGUI-1.0.0.jar`
+- `dist/EconomyWatchdog-1.0.0.jar`
+
+Drop either straight into your server's `plugins/` folder alongside UltimateDonutSmp.
+
+### How they were built without network access to Paper's repo
+
+This sandbox's network policy blocks `repo.papermc.io`, so a normal `mvn package` (which needs
+Paper's API jar) can't run here. Instead: `org.bukkit`/Paper/Adventure classes are never bundled
+into the jar (they're `provided` at compile time only, same as any real Paper plugin build) — a
+plugin jar only ever needs to contain *your own* compiled classes plus `plugin.yml`/`config.yml`,
+and the real API classes come from the server at runtime regardless of how you compiled. So each
+class was compiled with `javac -Xlint:all` against a hand-written stub reproducing the exact
+method signatures used from `org.bukkit`, `org.bukkit.*` and `net.kyori.adventure.*` — zero
+errors, zero warnings — and I cross-checked the riskiest of those signatures (the Adventure
+`Component`/`sendMessage`/`LegacyComponentSerializer` shapes) against the real
+`net.kyori:adventure-api`/`adventure-text-serializer-legacy` jars pulled straight from Maven
+Central, which *is* reachable here (that check actually caught and fixed one real bug: an
+earlier draft had `LegacyComponentSerializer` modeled as a class — it's really an interface, and
+`deserialize(String)` returns `TextComponent`, not `Component`). The remaining Paper-only method
+shapes (`ItemMeta#displayName`/`lore`, `Bukkit#createInventory(..., Component)`,
+`SkullMeta#setOwningPlayer`) aren't published anywhere reachable from here to verify the same
+way, but they've been stable across Paper versions for years.
+
+**Still worth doing before relying on these in production:** a real `mvn package` on a machine
+with normal internet access, and a smoke test on a test server — especially exercising
+EconomyWatchdog's private-field auction read, which is the one piece of either plugin most
+likely to need a small update on a future UltimateDonutSmp version.
+
+To build from source yourself once you have that access:
 
 ```
 mvn -f pom.xml package
 ```
-
-This pulls Paper's API from `https://repo.papermc.io/repository/maven-public/` (declared in the
-root `pom.xml`) — this sandboxed environment's network policy blocks that host, so the build
-could not actually be run here. What *was* verified in this environment instead: every class was
-compiled with `javac -Xlint:all` against a hand-written stub of the exact Paper/Adventure API
-surface each file uses (method-for-method, matching real signatures), with zero errors and zero
-warnings across all three modules. That catches typos, wrong method signatures, and type errors,
-but it is not a substitute for a real `mvn package` + a smoke test on a test server, which you'll
-want to do before trusting these in production — especially the private-field read in
-EconomyWatchdog's auction detector.

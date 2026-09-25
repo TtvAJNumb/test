@@ -10,7 +10,6 @@
     <packaging>pom</packaging>
 
     <modules>
-        <module>crate-odds-history</module>
         <module>punishment-history-gui</module>
         <module>economy-watchdog</module>
     </modules>
