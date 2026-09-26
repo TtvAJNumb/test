@@ -1,0 +1,37 @@
+name: TeamLeaderboard
+version: ${project.version}
+main: com.donututils.teamleaderboard.TeamLeaderboardPlugin
+api-version: "1.21"
+folia-supported: false
+description: Ranks UltimateDonutSmp teams by combined member money and shards, with paged /teambaltop and /teamshardstop menus.
+authors: [donututils]
+depend:
+  - UltimateDonutSmp
+commands:
+  teambaltop:
+    description: Shows which team has the most combined money.
+    usage: /teambaltop
+    aliases: [teamtop, teammoneytop]
+    permission: teamleaderboard.command.teambaltop
+    permission-message: "&cYou do not have permission to use /teambaltop."
+  teamshardstop:
+    description: Shows which team has the most combined shards.
+    usage: /teamshardstop
+    aliases: [teamshardtop]
+    permission: teamleaderboard.command.teamshardstop
+    permission-message: "&cYou do not have permission to use /teamshardstop."
+  teamleaderboard:
+    description: Manage TeamLeaderboard.
+    usage: /teamleaderboard <reload|status>
+    permission: teamleaderboard.admin
+    permission-message: "&cYou do not have permission to manage TeamLeaderboard."
+permissions:
+  teamleaderboard.command.teambaltop:
+    description: Allows viewing the team money leaderboard
+    default: true
+  teamleaderboard.command.teamshardstop:
+    description: Allows viewing the team shards leaderboard
+    default: true
+  teamleaderboard.admin:
+    description: Allows reloading TeamLeaderboard
+    default: op

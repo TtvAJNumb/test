@@ -1,0 +1,8 @@
+# How long a computed team ranking is cached before being recomputed from UltimateDonutSmp's
+# leaderboard data. Recomputing walks every team's members, so a couple of seconds keeps rapid
+# page-clicking cheap without showing stale numbers for long.
+refresh-interval-seconds: 5
+
+messages:
+  no-teams: "&7No teams have any members yet."
+  not-in-a-team-line: "&7You are not currently in a team."

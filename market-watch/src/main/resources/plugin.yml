@@ -1,0 +1,27 @@
+name: MarketWatch
+version: ${project.version}
+main: com.donututils.marketwatch.MarketWatchPlugin
+api-version: "1.21"
+folia-supported: false
+description: Tracks UltimateDonutSmp's total circulating money and auction house sale prices over time, with an optional local HTTP feed for a website and Discord digests.
+authors: [donututils]
+depend:
+  - UltimateDonutSmp
+commands:
+  ahstats:
+    description: Shows auction house price history for an item, or the most-traded items.
+    usage: /ahstats [item]
+    permission: marketwatch.command.ahstats
+    permission-message: "&cYou do not have permission to use /ahstats."
+  marketwatch:
+    description: Manage MarketWatch.
+    usage: /marketwatch <reload|status>
+    permission: marketwatch.admin
+    permission-message: "&cYou do not have permission to manage MarketWatch."
+permissions:
+  marketwatch.command.ahstats:
+    description: Allows viewing auction house market stats
+    default: true
+  marketwatch.admin:
+    description: Allows reloading MarketWatch
+    default: op

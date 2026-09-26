@@ -1,0 +1,33 @@
+# ── Economy health dashboard ─────────────────────────────────────────────────
+# How often the plugin walks UltimateDonutSmp's full money leaderboard and records one snapshot
+# (total circulating money + player count). This is a read-only sweep, but it does walk every
+# known player, so don't set it too low on a very large server.
+economy:
+  snapshot-interval-seconds: 1800
+  # How many days of snapshots to keep on disk before old ones are pruned.
+  retention-days: 90
+
+# ── Auction house price-history tracker ──────────────────────────────────────
+auction:
+  poll-interval-seconds: 30
+  retention-days: 30
+  # Only tracks a material if it appears in this list. Leave empty to track every material sold.
+  tracked-materials: []
+
+# ── Local HTTP feed (for a website chart, purely opt-in) ─────────────────────
+http:
+  enabled: false
+  port: 8787
+  # Binds to localhost only by default. Only set this to 0.0.0.0 if you understand the exposure
+  # and have your own firewall/reverse-proxy in front of it - this plugin does no TLS itself.
+  bind-address: "127.0.0.1"
+  # Optional shared secret. When set, requests must send header "X-Api-Key: <this value>".
+  api-key: ""
+
+discord:
+  webhook-url: ""
+  username: "MarketWatch"
+  # A daily digest posting total money, % change, and the day's top-traded items.
+  daily-digest:
+    enabled: false
+    hour-of-day-utc: 12

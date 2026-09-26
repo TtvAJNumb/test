@@ -13,6 +13,8 @@
         <module>punishment-history-gui</module>
         <module>economy-watchdog</module>
         <module>purchase-alert</module>
+        <module>team-leaderboard</module>
+        <module>market-watch</module>
     </modules>
 
     <properties>
