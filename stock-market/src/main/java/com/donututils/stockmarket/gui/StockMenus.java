@@ -1,5 +1,6 @@
 package com.donututils.stockmarket.gui;
 
+import com.donututils.stockmarket.config.StockMarketConfig;
 import com.donututils.stockmarket.engine.StockRegistry;
 import com.donututils.stockmarket.listener.ChatQuantityPrompt;
 import com.donututils.stockmarket.model.Stock;
@@ -15,6 +16,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
 import java.util.function.Consumer;
+import java.util.function.Supplier;
 
 /** Owns navigation between the market browser, stock detail, and portfolio menus. */
 public final class StockMenus {
@@ -23,9 +25,11 @@ public final class StockMenus {
     private final TradingService tradingService;
     private final PortfolioService portfolioService;
     private final ChatQuantityPrompt quantityPrompt;
+    private final Supplier<StockMarketConfig> configSupplier;
 
     public StockMenus(StockRegistry registry, TradingService tradingService, PortfolioService portfolioService,
-                       ChatQuantityPrompt quantityPrompt) {
+                       ChatQuantityPrompt quantityPrompt, Supplier<StockMarketConfig> configSupplier) {
+        this.configSupplier = configSupplier;
         this.registry = registry;
         this.tradingService = tradingService;
         this.portfolioService = portfolioService;
@@ -99,18 +103,80 @@ public final class StockMenus {
     private void promptBuy(Player player, String symbol) {
         player.closeInventory();
         quantityPrompt.prompt(player, "&aHow many shares of " + symbol + " do you want to buy?", qty -> {
-            TradingService.TradeResult result = tradingService.buy(player.getUniqueId(), player.getName(), symbol, qty);
-            player.sendMessage(PagedMenu.legacy((result.success() ? "&a" : "&c") + result.message()));
-            openStockDetail(player, symbol);
+            if (qty <= 0) {
+                player.sendMessage(PagedMenu.legacy("&cEnter a positive number of shares."));
+                openStockDetail(player, symbol);
+                return;
+            }
+            Stock stock = registry.get(symbol);
+            if (stock == null) {
+                player.sendMessage(PagedMenu.legacy("&cThat stock no longer exists."));
+                openMarket(player);
+                return;
+            }
+
+            double price = stock.price();
+            double gross = qty * price;
+            double fee = gross * (configSupplier.get().brokerFeePercent() / 100.0);
+            double total = gross + fee;
+
+            String preview = String.format(Locale.US,
+                    "&aBuying %d share(s) of %s at &f$%,.2f&a each.\n"
+                            + "&7Subtotal: &f$%,.2f &7| Fee: &f$%,.2f &7| &aTotal: &f$%,.2f",
+                    qty, stock.symbol(), price, gross, fee, total);
+
+            quantityPrompt.promptConfirmation(player, preview, () -> {
+                TradingService.TradeResult result = tradingService.buy(player.getUniqueId(), player.getName(), symbol, qty);
+                player.sendMessage(PagedMenu.legacy((result.success() ? "&a" : "&c") + result.message()));
+                openStockDetail(player, symbol);
+            });
         });
     }
 
     private void promptSell(Player player, String symbol) {
         player.closeInventory();
         quantityPrompt.prompt(player, "&cHow many shares of " + symbol + " do you want to sell?", qty -> {
-            TradingService.TradeResult result = tradingService.sell(player.getUniqueId(), player.getName(), symbol, qty);
-            player.sendMessage(PagedMenu.legacy((result.success() ? "&a" : "&c") + result.message()));
-            openStockDetail(player, symbol);
+            if (qty <= 0) {
+                player.sendMessage(PagedMenu.legacy("&cEnter a positive number of shares."));
+                openStockDetail(player, symbol);
+                return;
+            }
+            Stock stock = registry.get(symbol);
+            if (stock == null) {
+                player.sendMessage(PagedMenu.legacy("&cThat stock no longer exists."));
+                openMarket(player);
+                return;
+            }
+            PortfolioService.PositionView position = portfolioService.getPosition(player.getUniqueId(), symbol);
+            if (position == null || position.shares() < qty) {
+                long owned = position == null ? 0 : position.shares();
+                player.sendMessage(PagedMenu.legacy("&cYou only own " + owned + " share(s) of " + stock.symbol() + "."));
+                openStockDetail(player, symbol);
+                return;
+            }
+
+            double price = stock.price();
+            double gross = qty * price;
+            double fee = gross * (configSupplier.get().brokerFeePercent() / 100.0);
+            double proceeds = gross - fee;
+            double costBasisForQty = position.averageCost() * qty;
+            double profit = proceeds - costBasisForQty;
+            double profitPercent = costBasisForQty == 0 ? 0 : (profit / costBasisForQty) * 100.0;
+            String profitColor = profit >= 0 ? "&a" : "&c";
+
+            String preview = String.format(Locale.US,
+                    "&cSelling %d share(s) of %s at &f$%,.2f&c each.\n"
+                            + "&7Proceeds after fee: &f$%,.2f\n"
+                            + "&7Your cost basis for these shares: &f$%,.2f\n"
+                            + "&7Estimated profit/loss: %s%s$%,.2f (%+.2f%%)",
+                    qty, stock.symbol(), price, proceeds, costBasisForQty,
+                    profitColor, profit >= 0 ? "+" : "-", Math.abs(profit), profitPercent);
+
+            quantityPrompt.promptConfirmation(player, preview, () -> {
+                TradingService.TradeResult result = tradingService.sell(player.getUniqueId(), player.getName(), symbol, qty);
+                player.sendMessage(PagedMenu.legacy((result.success() ? "&a" : "&c") + result.message()));
+                openStockDetail(player, symbol);
+            });
         });
     }
 

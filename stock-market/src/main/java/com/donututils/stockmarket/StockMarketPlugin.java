@@ -116,7 +116,7 @@ public final class StockMarketPlugin extends JavaPlugin {
         summaryTask = new MarketSummaryTask(registry, alerts, this::getStockMarketConfig);
         quantityPrompt = new ChatQuantityPrompt(this);
 
-        StockMenus menus = new StockMenus(registry, tradingService, portfolioService, quantityPrompt);
+        StockMenus menus = new StockMenus(registry, tradingService, portfolioService, quantityPrompt, this::getStockMarketConfig);
 
         getServer().getPluginManager().registerEvents(new MenuClickListener(), this);
         getServer().getPluginManager().registerEvents(quantityPrompt, this);

@@ -54,4 +54,14 @@ public final class PortfolioService {
     public double totalNetWorth(UUID playerId) {
         return getPortfolio(playerId).totalValue();
     }
+
+    /** Null if the player doesn't hold that symbol. */
+    public PositionView getPosition(UUID playerId, String symbol) {
+        for (PositionView position : getPortfolio(playerId).positions()) {
+            if (position.symbol().equalsIgnoreCase(symbol)) {
+                return position;
+            }
+        }
+        return null;
+    }
 }
