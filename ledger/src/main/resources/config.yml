@@ -1,0 +1,71 @@
+# Ledger - a native banking, credit, loan, and corporate stock market simulation, backed by its own
+# SQLite database (via HikariCP). This IS the server's economy - it implements Vault's Economy
+# interface directly and registers itself, so any other Vault-aware plugin (including StockMarket and
+# DynamicShop) will use it automatically. Vault must still be installed so that registration works.
+
+# New players start with this checking-account balance the first time they join.
+starting-balance: 1000.0
+
+bank:
+  # APY for a savings account. Interest compounds continuously (prorated for partial days), applied
+  # by a background task every interest-tick-minutes.
+  savings-apy-percent: 4.0
+  interest-tick-minutes: 15
+
+credit:
+  # Every player starts here (a mid-range starting score, same idea as a thin credit file in
+  # real life). Range is capped to 300-850.
+  starting-score: 650
+  # Score point changes per event.
+  points-per-on-time-payment: 5
+  points-per-missed-payment: -25
+  points-per-default: -100
+
+loans:
+  # Credit-score tiers -> max loan amount and APR. Highest-scoring tier that a player's score meets
+  # or exceeds is used. Keep this list sorted highest score first.
+  tiers:
+    - min-score: 750
+      max-loan-amount: 50000.0
+      apr-percent: 6.0
+    - min-score: 650
+      max-loan-amount: 15000.0
+      apr-percent: 12.0
+    - min-score: 500
+      max-loan-amount: 5000.0
+      apr-percent: 22.0
+    - min-score: 300
+      max-loan-amount: 1000.0
+      apr-percent: 35.0
+  term-days: 30
+  # Missed payments before a loan is declared in default.
+  missed-payments-before-default: 3
+  payment-tick-minutes: 15
+
+corporations:
+  founding-cost: 2500.0
+  default-total-shares: 1000
+  # Share price baseline drift/volatility (same idea as StockMarket's random-walk engine).
+  base-drift: 0.0001
+  base-volatility: 0.01
+  # How much reported profit/loss nudges price per report, as a fraction of share price per dollar
+  # of profit relative to treasury size.
+  profit-price-sensitivity: 0.5
+  price-tick-minutes: 5
+
+tax:
+  # Percent of a player's total checking+savings balance collected periodically as wealth tax.
+  wealth-tax-percent: 1.0
+  wealth-tax-tick-hours: 24
+  # Percent collected on every Vault transaction processed through Ledger's own commands (deposits/
+  # withdrawals between checking and savings, share trades, etc). Does not apply to interest itself.
+  transaction-tax-percent: 2.0
+  # Percent of a corporation's treasury collected as corporate tax per cycle.
+  corporate-tax-percent: 5.0
+  corporate-tax-tick-hours: 24
+  # A corporation can write off reported expenses against revenue before corporate tax is calculated.
+  expense-writeoff-enabled: true
+  # A corporation flagged as a "trust" (see /corp trust) shields this percent of its treasury from
+  # corporate tax, at the cost of a one-time setup fee (trust-setup-cost).
+  trust-shield-percent: 40.0
+  trust-setup-cost: 10000.0

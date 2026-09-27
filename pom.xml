@@ -18,6 +18,7 @@
         <module>stock-market</module>
         <module>ai-chat</module>
         <module>dynamic-shop</module>
+        <module>ledger</module>
     </modules>
 
     <properties>

@@ -1,0 +1,51 @@
+name: Ledger
+version: ${project.version}
+main: com.donututils.ledger.LedgerPlugin
+api-version: "1.21"
+folia-supported: false
+description: A real-world-style banking, credit, loan, and corporate stock market simulation, backed by a real SQLite/MySQL database. Standalone - only needs Vault for cash.
+authors: [donututils]
+depend:
+  - Vault
+commands:
+  bank:
+    description: Manage your bank account - deposit, withdraw, check balance and credit score.
+    usage: /bank [deposit|withdraw|balance|credit] ...
+    permission: ledger.command.bank
+    permission-message: "&cYou do not have permission to use /bank."
+  loan:
+    description: Take out or repay a loan.
+    usage: /loan [request|repay|status] ...
+    permission: ledger.command.loan
+    permission-message: "&cYou do not have permission to use /loan."
+  corp:
+    description: Found and manage a corporation.
+    usage: /corp [found|report|info|dividend] ...
+    permission: ledger.command.corp
+    permission-message: "&cYou do not have permission to use /corp."
+  stock:
+    description: Buy or sell shares of a corporation.
+    usage: /stock [buy|sell|list|portfolio] ...
+    permission: ledger.command.stock
+    permission-message: "&cYou do not have permission to use /stock."
+  ledgeradmin:
+    description: Administer the Ledger economy (tax rates, forced settlements, etc).
+    usage: /ledgeradmin <reload|forgiveloan|settax|audit> ...
+    permission: ledger.admin
+    permission-message: "&cYou do not have permission to manage Ledger."
+permissions:
+  ledger.command.bank:
+    description: Allows using the bank
+    default: true
+  ledger.command.loan:
+    description: Allows requesting and repaying loans
+    default: true
+  ledger.command.corp:
+    description: Allows founding and managing a corporation
+    default: true
+  ledger.command.stock:
+    description: Allows trading corporation shares
+    default: true
+  ledger.admin:
+    description: Allows administering Ledger's economy
+    default: op
