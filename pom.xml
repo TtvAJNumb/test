@@ -21,6 +21,7 @@
         <module>ledger</module>
         <module>municipal</module>
         <module>arsenal</module>
+        <module>motors</module>
     </modules>
 
     <properties>

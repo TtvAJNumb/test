@@ -1,0 +1,20 @@
+name: Motors
+version: ${project.version}
+main: com.donututils.motors.MotorsPlugin
+api-version: "1.21"
+folia-supported: false
+description: Custom drivable vehicles built on vanilla boat/minecart riding physics - fuel, wear/maintenance, and DB-backed ownership that survives restarts. No InfiniteVehicles dependency.
+authors: [donututils]
+commands:
+  motors:
+    description: Give vehicle spawners, check fuel/wear, refuel, repair, or list vehicles.
+    usage: /motors [give <player> <vehicle>|list|info|refuel <amount>|repair|reload]
+    permission: motors.use
+    permission-message: "&cYou do not have permission to use /motors."
+permissions:
+  motors.use:
+    description: Allows /motors info, refuel, and repair
+    default: true
+  motors.admin:
+    description: Allows /motors give, list, and reload
+    default: op

@@ -1,0 +1,46 @@
+# Motors - custom vehicles built entirely on vanilla Boat/Minecart riding physics.
+#
+# Design notes (see the delivered summary for the full rationale):
+#   - "kind: BOAT" vehicles ride like a real vanilla boat, including the well-known vanilla behavior
+#     where a boat's paddle force still nudges it forward on dry land (slowly) - not just on water/ice.
+#     That's what lets a boat-kind vehicle work as a "car".
+#   - "kind: MINECART" vehicles need rails, like a real vanilla minecart - use these for rail-bound
+#     vehicles (trains, mine carts, trolleys).
+#   - The vanilla entity supplies 100% of the actual movement physics (steering, acceleration,
+#     collision) - Motors never overrides or fights that. It only adds fuel/wear bookkeeping and a
+#     decorative "body" (an invisible ArmorStand wearing a custom-model-data item) that rides
+#     alongside so the resource pack can make it look like a real vehicle instead of a boat/cart.
+#   - Ownership and fuel/wear survive server restarts: vanilla chunk serialization already persists
+#     the underlying entity (with a stable UUID), so Motors just reconnects to it by UUID and keeps
+#     its own fuel/wear/mileage numbers in SQLite.
+
+vehicles:
+  sedan:
+    kind: BOAT
+    key-material: OAK_BOAT
+    key-custom-model-data: 42001
+    key-display-name: "&b&lSedan &7(place)"
+    body-helmet-material: LEATHER_HORSE_ARMOR
+    body-helmet-custom-model-data: 42101
+    display-name: "&b&lSedan"
+    max-fuel: 1000.0
+    fuel-drain-per-second: 0.5
+    max-wear: 100.0
+    wear-per-block: 0.02
+    refuel-cost-per-unit: 0.5
+    repair-cost-per-wear: 4.0
+
+  cargo-train:
+    kind: MINECART
+    key-material: MINECART
+    key-custom-model-data: 42002
+    key-display-name: "&6&lCargo Train &7(place on rail)"
+    body-helmet-material: IRON_HORSE_ARMOR
+    body-helmet-custom-model-data: 42102
+    display-name: "&6&lCargo Train"
+    max-fuel: 2000.0
+    fuel-drain-per-second: 0.4
+    max-wear: 150.0
+    wear-per-block: 0.015
+    refuel-cost-per-unit: 0.4
+    repair-cost-per-wear: 5.0
