@@ -22,7 +22,7 @@
     </dependencies>
 
     <build>
-        <finalName>StockMarket-1.0.0</finalName>
+        <finalName>StockMarket-1.0.1</finalName>
         <resources>
             <resource>
                 <directory>src/main/resources</directory>

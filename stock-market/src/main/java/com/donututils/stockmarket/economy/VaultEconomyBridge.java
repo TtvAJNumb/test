@@ -5,6 +5,7 @@ import org.bukkit.OfflinePlayer;
 import org.bukkit.plugin.RegisteredServiceProvider;
 import org.bukkit.plugin.ServicesManager;
 
+import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.UUID;
@@ -23,17 +24,17 @@ public final class VaultEconomyBridge {
     private final Method withdrawPlayer;
     private final Method depositPlayer;
     private final Method transactionSuccess;
-    private final Method getErrorMessage;
+    private final Field errorMessageField;
 
     private VaultEconomyBridge(Object economy, Method getBalance, Method has, Method withdrawPlayer,
-                                Method depositPlayer, Method transactionSuccess, Method getErrorMessage) {
+                                Method depositPlayer, Method transactionSuccess, Field errorMessageField) {
         this.economy = economy;
         this.getBalance = getBalance;
         this.has = has;
         this.withdrawPlayer = withdrawPlayer;
         this.depositPlayer = depositPlayer;
         this.transactionSuccess = transactionSuccess;
-        this.getErrorMessage = getErrorMessage;
+        this.errorMessageField = errorMessageField;
     }
 
     /** Returns null if Vault isn't installed or has no economy provider registered yet. */
@@ -59,10 +60,11 @@ public final class VaultEconomyBridge {
 
         Class<?> responseClass = Class.forName("net.milkbowl.vault.economy.EconomyResponse");
         Method transactionSuccess = responseClass.getMethod("transactionSuccess");
-        Method getErrorMessage = responseClass.getMethod("getErrorMessage");
+        // errorMessage is a public field on EconomyResponse, not a getter method.
+        Field errorMessageField = responseClass.getField("errorMessage");
 
         return new VaultEconomyBridge(economy, getBalance, has, withdrawPlayer, depositPlayer,
-                transactionSuccess, getErrorMessage);
+                transactionSuccess, errorMessageField);
     }
 
     public double getBalance(UUID playerId) {
@@ -79,15 +81,23 @@ public final class VaultEconomyBridge {
     public EconomyResult withdraw(UUID playerId, double amount) {
         Object response = call(withdrawPlayer, economy, offlinePlayer(playerId), amount);
         boolean success = (boolean) call(transactionSuccess, response);
-        String error = success ? null : (String) call(getErrorMessage, response);
+        String error = success ? null : readErrorMessage(response);
         return new EconomyResult(success, error);
     }
 
     public EconomyResult deposit(UUID playerId, double amount) {
         Object response = call(depositPlayer, economy, offlinePlayer(playerId), amount);
         boolean success = (boolean) call(transactionSuccess, response);
-        String error = success ? null : (String) call(getErrorMessage, response);
+        String error = success ? null : readErrorMessage(response);
         return new EconomyResult(success, error);
+    }
+
+    private String readErrorMessage(Object response) {
+        try {
+            return (String) errorMessageField.get(response);
+        } catch (IllegalAccessException ex) {
+            throw new IllegalStateException("errorMessage field is not accessible: " + ex, ex);
+        }
     }
 
     private static OfflinePlayer offlinePlayer(UUID playerId) {
