@@ -1,0 +1,20 @@
+name: AIChat
+version: ${project.version}
+main: com.donututils.aichat.AIChatPlugin
+api-version: "1.21"
+folia-supported: false
+description: A general-purpose in-game AI chat assistant for any server, powered by the Anthropic Claude API. Not tied to any other plugin.
+authors: [donututils]
+commands:
+  ai:
+    description: Talk to the server's AI assistant.
+    usage: /ai <message> | /ai reset | /ai reload
+    permission: aichat.command.ai
+    permission-message: "&cYou do not have permission to use /ai."
+permissions:
+  aichat.command.ai:
+    description: Allows chatting with the AI assistant
+    default: true
+  aichat.admin:
+    description: Allows reloading the AI assistant's configuration
+    default: op

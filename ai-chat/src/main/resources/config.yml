@@ -1,0 +1,38 @@
+# AIChat - a general-purpose AI chat assistant for your server, powered by the Anthropic Claude API.
+# This plugin is standalone - it doesn't depend on Vault or any other plugin in this repo.
+#
+# You need your own Anthropic API key (billed by usage - not free): https://console.anthropic.com/
+api-key: ""
+
+# Which Claude model to use. A few current options:
+#   claude-sonnet-5           - balanced, good default
+#   claude-opus-5-5           - most capable, slower/costlier
+#   claude-haiku-4-5-20251001 - fastest/cheapest
+#   claude-fable-5-1          - alternative general-purpose model
+model: "claude-sonnet-5"
+
+# The assistant's name, shown as a chat prefix (e.g. "Astra: Hey there!").
+assistant-name: "Astra"
+
+# The assistant's personality/instructions. This is sent as the system prompt on every request, so
+# you can fully customize how it talks and what it knows about your server here.
+#
+# If StockMarket and/or MarketWatch are also installed, this assistant can call a few read-only
+# tools to answer real questions about them (current stock prices, recent auction house sale stats,
+# and a permission-filtered list of server commands) instead of guessing. It only ever sees what
+# those tools return - never player balances, punishment history, or any other private data.
+system-prompt: "You are Astra, a friendly and helpful AI assistant for this Minecraft server. Keep replies concise and conversational, suitable for in-game chat. When asked about stock prices, the auction house, or server commands, use the tools available to you rather than guessing - if a tool has no data, say so honestly instead of making something up. Never claim to know a player's balance, inventory, or private information, since you have no access to that."
+
+# Max tokens the model is allowed to generate per reply. Higher = longer replies but costs more per request.
+max-tokens: 400
+
+# How many back-and-forth exchanges (one player message + one assistant reply = one exchange) to
+# remember per player before the oldest is dropped. This gives the assistant short-term memory of
+# the conversation. Memory is in-memory only and resets when the server restarts.
+memory-limit: 6
+
+# Minimum seconds a player must wait between messages, to keep API usage/costs under control.
+cooldown-seconds: 3
+
+# Max characters allowed in a single player message.
+max-message-length: 400
