@@ -5,8 +5,8 @@ import com.donututils.marketwatch.discord.DiscordWebhook;
 import com.donututils.marketwatch.service.MarketStatsService;
 
 import java.time.Instant;
+import java.time.LocalDate;
 import java.time.ZoneOffset;
-import java.time.temporal.ChronoField;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
@@ -41,7 +41,7 @@ public final class DailyDigestTask implements Runnable {
         }
 
         Instant now = Instant.now();
-        long currentEpochDay = now.getLong(ChronoField.EPOCH_DAY);
+        long currentEpochDay = LocalDate.ofInstant(now, ZoneOffset.UTC).toEpochDay();
         int currentHour = now.atZone(ZoneOffset.UTC).getHour();
         if (currentHour < config.dailyDigestHourUtc() || currentEpochDay == lastSentEpochDay) {
             return;

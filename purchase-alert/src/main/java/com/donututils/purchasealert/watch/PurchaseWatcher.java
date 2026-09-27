@@ -64,7 +64,11 @@ public final class PurchaseWatcher implements Runnable {
                 continue;
             }
             announcedOrderIds.add(order.id());
-            announce(order);
+            // A chargeback/expiry job also reaches "delivered" once its removeshards-style command
+            // runs - that's not a new sale, so it must not get the same "just purchased" message.
+            if (isNewPurchaseEvent(order)) {
+                announce(order);
+            }
         }
 
         // Bound memory to roughly the size of the "recent orders" window instead of growing forever.
@@ -77,6 +81,15 @@ public final class PurchaseWatcher implements Runnable {
 
     private static boolean isDelivered(OrderRecord order) {
         return order.status() != null && order.status().equalsIgnoreCase("delivered");
+    }
+
+    /** True for a genuine new purchase (or renewal); false for a chargeback/expiry job. */
+    private static boolean isNewPurchaseEvent(OrderRecord order) {
+        String event = order.event();
+        if (event == null || event.isBlank()) {
+            return true;
+        }
+        return !event.equalsIgnoreCase("chargeback") && !event.equalsIgnoreCase("expiry");
     }
 
     private void announce(OrderRecord order) {
