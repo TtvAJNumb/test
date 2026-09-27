@@ -17,6 +17,7 @@
         <module>market-watch</module>
         <module>stock-market</module>
         <module>ai-chat</module>
+        <module>dynamic-shop</module>
     </modules>
 
     <properties>

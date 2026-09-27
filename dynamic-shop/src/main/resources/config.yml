@@ -1,0 +1,66 @@
+# DynamicShop - a general-purpose, config-driven item shop with supply/demand-based dynamic pricing,
+# multi-currency support, auto-sell, exploit protection, loans, and basic economy stats.
+# Standalone - only needs Vault (for money) and/or PlayerPoints (for shards) if those currencies
+# below are enabled. Any feature can be switched off without removing the plugin.
+
+# How often (seconds) item prices update based on recent buy/sell pressure.
+tick-interval-seconds: 30
+
+# Autosave interval (seconds) for item prices, player data, and loans.
+autosave-interval-seconds: 300
+
+currencies:
+  money:
+    enabled: true
+    # Bridges to whatever economy plugin is registered with Vault.
+    display-name: "Money"
+  shards:
+    enabled: true
+    # Bridges to the PlayerPoints plugin. Set enabled: false if you don't use a second currency,
+    # or don't have PlayerPoints installed.
+    display-name: "Shards"
+
+gui:
+  title: "&8Server Shop"
+
+# Turn any feature fully off here without uninstalling the plugin.
+features:
+  auto-sell: true
+  loans: true
+  web-server: false
+  gdp-stats: true
+  tutorial: true
+  # If true, players can only buy a material after they've sold/collected it at least once before.
+  purchase-restriction: false
+
+exploit-protection:
+  # Minimum seconds between transactions per player, per item.
+  transaction-cooldown-seconds: 1
+  # Hard cap on quantity per single transaction, on top of each item's own max-buy/max-sell.
+  global-max-quantity-per-transaction: 6400
+
+loans:
+  max-loan-amount: 10000.0
+  interest-rate-percent-per-day: 5.0
+  max-outstanding-loans-per-player: 1
+
+web-server:
+  # Bound to localhost by default - put your own reverse proxy/firewall in front if you expose it.
+  bind-address: "127.0.0.1"
+  port: 8082
+  # Optional: required as an X-Api-Key header if set.
+  api-key: ""
+
+gdp:
+  # How often (minutes) to record an economy snapshot for GDP/debt/inflation tracking.
+  snapshot-interval-minutes: 60
+
+tutorial:
+  # Sent as separate chat lines, in order, the first time a player opens the shop.
+  lines:
+    - "&6&lWelcome to the Server Shop!"
+    - "&7Use &f/shop &7to open the shop GUI."
+    - "&7Click the tabs at the top to filter by currency (Money, Shards, or All)."
+    - "&7Click an item to buy; shift-click to sell."
+    - "&7Use &f/shop sell hand &7to quickly sell what you're holding."
+    - "&7Use &f/shop autosell <item> &7to toggle automatically selling an item when you mine it."
