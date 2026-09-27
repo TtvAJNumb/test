@@ -1,0 +1,43 @@
+# Municipal - law enforcement, courts, jail, and permits/licensing. Standalone - uses Vault for
+# permit costs (works with Ledger, or any other Vault-compatible economy).
+
+permits:
+  business:
+    cost: 5000.0
+    permission: "municipal.permit.business"
+  building:
+    cost: 1000.0
+    permission: "municipal.permit.building"
+  weapon:
+    cost: 2500.0
+    permission: "municipal.permit.weapon"
+
+enforcement:
+  # Worlds where placing a block requires the building permit. Empty = enforced nowhere.
+  city-limit-worlds:
+    - "world"
+  # Materials that require the weapon permit just to use (right-click/interact with). Empty = no
+  # weapon enforcement. Add more as your server's combat/weapon plugins add new item types.
+  controlled-weapons:
+    - "BOW"
+    - "CROSSBOW"
+    - "TRIDENT"
+
+jail:
+  world: "world"
+  x: 0.0
+  y: 100.0
+  z: 0.0
+  # How far (blocks) a jailed player can wander from the jail point before being snapped back.
+  radius: 10.0
+  # Commands jailed players can still use (without the leading slash). "help" always allowed.
+  allowed-commands:
+    - "help"
+    - "msg"
+    - "r"
+  # How often (seconds) to check for players whose sentence has finished and release them.
+  release-check-seconds: 30
+
+court:
+  # Hard cap on a single sentence, regardless of what a judge requests.
+  max-sentence-minutes: 10080

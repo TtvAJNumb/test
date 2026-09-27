@@ -1,0 +1,38 @@
+name: Municipal
+version: ${project.version}
+main: com.donututils.municipal.MunicipalPlugin
+api-version: "1.21"
+folia-supported: false
+description: Law enforcement, courts, jail, and business/building/weapon permits - backed by its own SQLite database. Uses Vault for permit costs, so it works with Ledger or any other Vault-compatible economy.
+authors: [donututils]
+depend:
+  - Vault
+commands:
+  permit:
+    description: Buy or check business/building/weapon permits.
+    usage: /permit [buy <business|building|weapon>|check [player]]
+    permission: municipal.command.permit
+    permission-message: "&cYou do not have permission to use /permit."
+  police:
+    description: Arrest a player, opening a pending court case.
+    usage: /police arrest <player> <reason>
+    permission: municipal.police
+    permission-message: "&cYou do not have permission to use /police."
+  court:
+    description: Preside over trials - sentence, dismiss, release, or check a criminal record.
+    usage: /court [sentence <caseId> <minutes> <reason>|dismiss <caseId> [reason]|release <player>|record <player>]
+    permission: municipal.judge
+    permission-message: "&cYou do not have permission to use /court."
+permissions:
+  municipal.command.permit:
+    description: Allows buying and checking permits
+    default: true
+  municipal.police:
+    description: Allows arresting players
+    default: op
+  municipal.judge:
+    description: Allows sentencing, dismissing, and releasing court cases
+    default: op
+  municipal.bypass:
+    description: Skips building/weapon permit enforcement
+    default: op

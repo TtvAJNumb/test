@@ -19,6 +19,7 @@
         <module>ai-chat</module>
         <module>dynamic-shop</module>
         <module>ledger</module>
+        <module>municipal</module>
     </modules>
 
     <properties>
