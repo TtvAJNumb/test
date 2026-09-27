@@ -1,16 +1,30 @@
 package com.donututils.ledger;
 
+import com.donututils.ledger.bank.BankManager;
+import com.donututils.ledger.command.BankCommand;
+import com.donututils.ledger.command.CorpCommand;
+import com.donututils.ledger.command.LedgerAdminCommand;
+import com.donututils.ledger.command.LoanCommand;
+import com.donututils.ledger.command.StockCommand;
 import com.donututils.ledger.config.LedgerConfig;
 import com.donututils.ledger.config.LoanTier;
+import com.donututils.ledger.corp.CorporationManager;
+import com.donututils.ledger.credit.CreditScoreManager;
 import com.donututils.ledger.db.DatabaseManager;
 import com.donututils.ledger.economy.LedgerEconomyProvider;
+import com.donututils.ledger.loan.LoanManager;
+import com.donututils.ledger.stock.ShareTradingManager;
+import com.donututils.ledger.tax.TaxManager;
 import net.milkbowl.vault.economy.Economy;
+import org.bukkit.command.CommandExecutor;
+import org.bukkit.command.PluginCommand;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.plugin.ServicePriority;
 import org.bukkit.plugin.java.JavaPlugin;
+import org.bukkit.scheduler.BukkitTask;
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -28,7 +42,16 @@ public final class LedgerPlugin extends JavaPlugin implements Listener {
 
     private DatabaseManager databaseManager;
     private LedgerEconomyProvider economyProvider;
+    private BankManager bankManager;
+    private CreditScoreManager creditScoreManager;
+    private LoanManager loanManager;
+    private CorporationManager corporationManager;
+    private ShareTradingManager shareTradingManager;
+    private TaxManager taxManager;
+
     private volatile LedgerConfig config;
+
+    private final List<BukkitTask> scheduledTasks = new ArrayList<>();
 
     @Override
     public void onEnable() {
@@ -37,15 +60,30 @@ public final class LedgerPlugin extends JavaPlugin implements Listener {
 
         databaseManager = new DatabaseManager(getDataFolder(), getLogger());
         economyProvider = new LedgerEconomyProvider(this, databaseManager, config.startingBalance());
+        creditScoreManager = new CreditScoreManager(this, databaseManager, this::getLedgerConfig);
+        bankManager = new BankManager(this, databaseManager, economyProvider, this::getLedgerConfig);
+        loanManager = new LoanManager(this, databaseManager, economyProvider, creditScoreManager, this::getLedgerConfig);
+        corporationManager = new CorporationManager(this, databaseManager, economyProvider, this::getLedgerConfig);
+        shareTradingManager = new ShareTradingManager(this, databaseManager, economyProvider, corporationManager, this::getLedgerConfig);
+        taxManager = new TaxManager(this, economyProvider, bankManager, corporationManager, this::getLedgerConfig);
 
         getServer().getServicesManager().register(Economy.class, economyProvider, this, ServicePriority.Highest);
         getServer().getPluginManager().registerEvents(this, this);
+
+        registerCommand("bank", new BankCommand(this, economyProvider, bankManager, creditScoreManager));
+        registerCommand("loan", new LoanCommand(this, loanManager));
+        registerCommand("corp", new CorpCommand(this, corporationManager, shareTradingManager));
+        registerCommand("stock", new StockCommand(this, corporationManager, shareTradingManager, taxManager, economyProvider));
+        registerCommand("ledgeradmin", new LedgerAdminCommand(this, loanManager));
+
+        startTasks();
 
         getLogger().info("Ledger enabled - registered as the server's Vault economy provider.");
     }
 
     @Override
     public void onDisable() {
+        stopTasks();
         getServer().getServicesManager().unregisterAll(this);
         if (databaseManager != null) {
             databaseManager.shutdown();
@@ -60,6 +98,8 @@ public final class LedgerPlugin extends JavaPlugin implements Listener {
     public void reloadLedger() {
         reloadConfig();
         config = loadConfigValues();
+        stopTasks();
+        startTasks();
     }
 
     public LedgerConfig getLedgerConfig() {
@@ -72,6 +112,38 @@ public final class LedgerPlugin extends JavaPlugin implements Listener {
 
     public LedgerEconomyProvider getEconomyProvider() {
         return economyProvider;
+    }
+
+    private void startTasks() {
+        long tickMinutesToTicks = 20L * 60L;
+        scheduledTasks.add(getServer().getScheduler().runTaskTimerAsynchronously(this, bankManager::tickInterest,
+                config.interestTickMinutes() * tickMinutesToTicks, config.interestTickMinutes() * tickMinutesToTicks));
+        scheduledTasks.add(getServer().getScheduler().runTaskTimerAsynchronously(this, loanManager::tickLoans,
+                config.loanPaymentTickMinutes() * tickMinutesToTicks, config.loanPaymentTickMinutes() * tickMinutesToTicks));
+        scheduledTasks.add(getServer().getScheduler().runTaskTimerAsynchronously(this, shareTradingManager::tickPrices,
+                config.corpPriceTickMinutes() * tickMinutesToTicks, config.corpPriceTickMinutes() * tickMinutesToTicks));
+
+        long tickHoursToTicks = 20L * 60L * 60L;
+        scheduledTasks.add(getServer().getScheduler().runTaskTimerAsynchronously(this, taxManager::collectWealthTax,
+                config.wealthTaxTickHours() * tickHoursToTicks, config.wealthTaxTickHours() * tickHoursToTicks));
+        scheduledTasks.add(getServer().getScheduler().runTaskTimerAsynchronously(this, taxManager::collectCorporateTax,
+                config.corporateTaxTickHours() * tickHoursToTicks, config.corporateTaxTickHours() * tickHoursToTicks));
+    }
+
+    private void stopTasks() {
+        for (BukkitTask task : scheduledTasks) {
+            task.cancel();
+        }
+        scheduledTasks.clear();
+    }
+
+    private void registerCommand(String name, CommandExecutor executor) {
+        PluginCommand command = getCommand(name);
+        if (command != null) {
+            command.setExecutor(executor);
+        } else {
+            getLogger().warning("plugin.yml is missing the '" + name + "' command definition.");
+        }
     }
 
     private LedgerConfig loadConfigValues() {

@@ -3,7 +3,7 @@ version: ${project.version}
 main: com.donututils.ledger.LedgerPlugin
 api-version: "1.21"
 folia-supported: false
-description: A real-world-style banking, credit, loan, and corporate stock market simulation, backed by a real SQLite/MySQL database. Standalone - only needs Vault for cash.
+description: A native banking, credit, loan, and corporate stock market simulation backed by its own SQLite database. Registers itself as the server's Vault economy provider - no other economy plugin required.
 authors: [donututils]
 depend:
   - Vault
@@ -20,7 +20,7 @@ commands:
     permission-message: "&cYou do not have permission to use /loan."
   corp:
     description: Found and manage a corporation.
-    usage: /corp [found|report|info|dividend] ...
+    usage: /corp [found|report|info|dividend|trust] ...
     permission: ledger.command.corp
     permission-message: "&cYou do not have permission to use /corp."
   stock:
@@ -29,8 +29,8 @@ commands:
     permission: ledger.command.stock
     permission-message: "&cYou do not have permission to use /stock."
   ledgeradmin:
-    description: Administer the Ledger economy (tax rates, forced settlements, etc).
-    usage: /ledgeradmin <reload|forgiveloan|settax|audit> ...
+    description: Administer the Ledger economy.
+    usage: /ledgeradmin <reload|forgiveloan> ...
     permission: ledger.admin
     permission-message: "&cYou do not have permission to manage Ledger."
 permissions:

@@ -71,6 +71,12 @@ public final class LedgerEconomyProvider implements Economy {
         });
     }
 
+    /** Snapshot of every player Ledger currently knows about and their checking balance - used by
+     * TaxManager's wealth-tax sweep. */
+    public Map<UUID, Double> allCheckingBalances() {
+        return Map.copyOf(checkingBalances);
+    }
+
     private void persistBalanceAsync(UUID playerId, double balance) {
         Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
             String sql = "INSERT INTO bank_accounts (player_id, account_type, balance, apy, last_interest_at) "
