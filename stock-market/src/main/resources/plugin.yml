@@ -24,8 +24,8 @@ commands:
     permission: stockmarket.command.stockleaderboard
     permission-message: "&cYou do not have permission to use /stockleaderboard."
   stockadmin:
-    description: Manage the stock market (create/delist/split/halt/resume/event/reload/save).
-    usage: /stockadmin <create|delist|split|halt|resume|event|reload|save> ...
+    description: Manage the stock market (create/delist/split/halt/resume/event/material/reload/save).
+    usage: /stockadmin <create|delist|split|halt|resume|event|material|reload|save> ...
     permission: stockmarket.admin
     permission-message: "&cYou do not have permission to manage the stock market."
 permissions:

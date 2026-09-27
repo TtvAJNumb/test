@@ -12,7 +12,7 @@ import java.util.Locale;
 
 public final class StockAdminCommand implements CommandExecutor {
 
-    private static final String USAGE = "&cUsage: /stockadmin <create|delist|split|halt|resume|event|reload|save> ...";
+    private static final String USAGE = "&cUsage: /stockadmin <create|delist|split|halt|resume|event|material|reload|save> ...";
 
     private final StockMarketPlugin plugin;
     private final StockRegistry registry;
@@ -39,6 +39,7 @@ public final class StockAdminCommand implements CommandExecutor {
                 case "halt" -> halt(sender, args);
                 case "resume" -> resume(sender, args);
                 case "event" -> event(sender, args);
+                case "material" -> material(sender, args);
                 case "reload" -> {
                     plugin.reloadStockMarket();
                     sender.sendMessage(PagedMenu.legacy("&aStockMarket config reloaded."));
@@ -57,8 +58,9 @@ public final class StockAdminCommand implements CommandExecutor {
 
     private void create(CommandSender sender, String[] args) {
         if (args.length < 8) {
-            sender.sendMessage(PagedMenu.legacy("&cUsage: /stockadmin create <symbol> <name> <sector> <startPrice> <sharesOutstanding> <drift> <volatility>"));
+            sender.sendMessage(PagedMenu.legacy("&cUsage: /stockadmin create <symbol> <name> <sector> <startPrice> <sharesOutstanding> <drift> <volatility> [material]"));
             sender.sendMessage(PagedMenu.legacy("&7drift/volatility are fractions per tick, e.g. drift 0.0002 = 0.02%, volatility 0.01 = 1% typical swing."));
+            sender.sendMessage(PagedMenu.legacy("&7material is optional and defaults to PAPER, e.g. GOLD_INGOT, DIAMOND, NETHERITE_INGOT."));
             return;
         }
         String symbol = args[1];
@@ -68,12 +70,28 @@ public final class StockAdminCommand implements CommandExecutor {
         long sharesOutstanding = Long.parseLong(args[5]);
         double drift = Double.parseDouble(args[6]);
         double volatility = Double.parseDouble(args[7]);
+        String material = args.length >= 9 ? args[8] : null;
 
-        String error = adminService.createStock(symbol, name, sector, startPrice, sharesOutstanding, drift, volatility);
+        String error = adminService.createStock(symbol, name, sector, startPrice, sharesOutstanding, drift, volatility, material);
         if (error == null) {
             registry.saveAll();
         }
         sender.sendMessage(PagedMenu.legacy(error == null ? "&aListed " + symbol.toUpperCase() + "." : "&c" + error));
+    }
+
+    private void material(CommandSender sender, String[] args) {
+        if (args.length < 3) {
+            sender.sendMessage(PagedMenu.legacy("&cUsage: /stockadmin material <symbol> <material>"));
+            sender.sendMessage(PagedMenu.legacy("&7material must be a real item/block name, e.g. GOLD_INGOT, DIAMOND, NETHERITE_INGOT."));
+            return;
+        }
+        String error = adminService.setMaterial(args[1], args[2]);
+        if (error == null) {
+            registry.saveAll();
+        }
+        sender.sendMessage(PagedMenu.legacy(error == null
+                ? "&aSet " + args[1].toUpperCase() + "'s icon to " + args[2].toUpperCase() + "."
+                : "&c" + error));
     }
 
     private void delist(CommandSender sender, String[] args) {

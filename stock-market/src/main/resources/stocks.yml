@@ -7,6 +7,7 @@ stocks:
   DONT:
     name: "Donut Corp"
     sector: "Food"
+    material: "CAKE"
     price: 100.0
     previousClose: 100.0
     dayOpen: 100.0
@@ -25,6 +26,7 @@ stocks:
   PICK:
     name: "Pickaxe Industries"
     sector: "Mining"
+    material: "IRON_PICKAXE"
     price: 250.0
     previousClose: 250.0
     dayOpen: 250.0
@@ -43,6 +45,7 @@ stocks:
   CRFT:
     name: "Crafters United"
     sector: "Utility"
+    material: "CRAFTING_TABLE"
     price: 50.0
     previousClose: 50.0
     dayOpen: 50.0
@@ -61,6 +64,7 @@ stocks:
   NTHR:
     name: "Nether Ventures"
     sector: "Speculative"
+    material: "NETHER_STAR"
     price: 15.0
     previousClose: 15.0
     dayOpen: 15.0
@@ -79,6 +83,7 @@ stocks:
   BNKR:
     name: "Bunker Holdings"
     sector: "Finance"
+    material: "GOLD_INGOT"
     price: 500.0
     previousClose: 500.0
     dayOpen: 500.0

@@ -67,6 +67,7 @@ public final class StockStore {
             stock.restoreHalt(s.getBoolean("halted", false), s.getLong("haltedUntilMillis", 0));
             stock.setDelisted(s.getBoolean("delisted", false));
             stock.setDayStartMillis(s.getLong("dayStartMillis", System.currentTimeMillis()));
+            stock.setMaterialName(s.getString("material", "PAPER"));
             stocks.put(symbol.toUpperCase(), stock);
         }
         return stocks;
@@ -78,6 +79,7 @@ public final class StockStore {
             String path = "stocks." + stock.symbol();
             yaml.set(path + ".name", stock.name());
             yaml.set(path + ".sector", stock.sector());
+            yaml.set(path + ".material", stock.materialName());
             yaml.set(path + ".price", stock.price());
             yaml.set(path + ".previousClose", stock.previousClose());
             yaml.set(path + ".dayOpen", stock.dayOpen());

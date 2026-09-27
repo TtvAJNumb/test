@@ -7,6 +7,7 @@ import com.donututils.stockmarket.model.Holding;
 import com.donututils.stockmarket.model.Stock;
 import com.donututils.stockmarket.storage.HolderIndexStore;
 import com.donututils.stockmarket.storage.PortfolioStore;
+import org.bukkit.Material;
 
 import java.util.Map;
 import java.util.UUID;
@@ -29,16 +30,22 @@ public final class MarketAdminService {
         this.alerts = alerts;
     }
 
-    /** Returns an error message, or null on success. */
+    /** Returns an error message, or null on success. materialName may be null to keep the default (PAPER). */
     public String createStock(String symbol, String name, String sector, double startingPrice,
-                               long sharesOutstanding, double drift, double volatility) {
+                               long sharesOutstanding, double drift, double volatility, String materialName) {
         if (registry.exists(symbol)) {
             return "A stock with symbol " + symbol.toUpperCase() + " already exists.";
         }
         if (startingPrice <= 0 || sharesOutstanding <= 0) {
             return "Starting price and shares outstanding must both be positive.";
         }
+        if (materialName != null && !isValidMaterial(materialName)) {
+            return "Unknown material: " + materialName + " (must be a real item/block name, e.g. GOLD_INGOT).";
+        }
         Stock stock = new Stock(symbol, name, sector, startingPrice, sharesOutstanding, drift, volatility);
+        if (materialName != null) {
+            stock.setMaterialName(materialName);
+        }
         registry.add(stock);
         alerts.ipo(stock);
         return null;
@@ -120,5 +127,26 @@ public final class MarketAdminService {
         }
         stock.applyEvent(driftBoost, volatilityBoost, System.currentTimeMillis() + (durationSeconds * 1000L));
         return null;
+    }
+
+    public String setMaterial(String symbol, String materialName) {
+        Stock stock = registry.get(symbol);
+        if (stock == null) {
+            return "Unknown stock: " + symbol;
+        }
+        if (!isValidMaterial(materialName)) {
+            return "Unknown material: " + materialName + " (must be a real item/block name, e.g. GOLD_INGOT).";
+        }
+        stock.setMaterialName(materialName);
+        return null;
+    }
+
+    private static boolean isValidMaterial(String materialName) {
+        try {
+            Material.valueOf(materialName.toUpperCase());
+            return true;
+        } catch (IllegalArgumentException ex) {
+            return false;
+        }
     }
 }

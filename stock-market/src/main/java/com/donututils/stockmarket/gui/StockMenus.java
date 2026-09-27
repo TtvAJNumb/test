@@ -190,7 +190,7 @@ public final class StockMenus {
         if (stock.halted()) {
             lore.add("&c⚠ Trading halted");
         }
-        return item(Material.PAPER, (changePercent >= 0 ? "&a" : "&c") + stock.symbol() + " &f- " + stock.name(), lore);
+        return item(resolveMaterial(stock.materialName()), (changePercent >= 0 ? "&a" : "&c") + stock.symbol() + " &f- " + stock.name(), lore);
     }
 
     private ItemStack detailItem(Stock stock) {
@@ -208,7 +208,7 @@ public final class StockMenus {
         if (stock.halted()) {
             lore.add("&c⚠ Trading halted");
         }
-        return item(Material.NETHER_STAR, "&6" + stock.symbol(), lore);
+        return item(resolveMaterial(stock.materialName()), "&6" + stock.symbol(), lore);
     }
 
     private ItemStack positionItem(PortfolioService.PositionView position) {
@@ -220,7 +220,17 @@ public final class StockMenus {
                 "&7Unrealized P&L: " + (position.unrealizedPnl() >= 0 ? "&a" : "&c") + "$" + fmt(position.unrealizedPnl())
                         + " (" + fmtPercent(position.unrealizedPnlPercent()) + ")"
         );
-        return item(Material.PLAYER_HEAD, "&6" + position.symbol(), lore);
+        Stock stock = registry.get(position.symbol());
+        Material material = stock == null ? Material.PLAYER_HEAD : resolveMaterial(stock.materialName());
+        return item(material, "&6" + position.symbol(), lore);
+    }
+
+    private static Material resolveMaterial(String materialName) {
+        try {
+            return Material.valueOf(materialName.toUpperCase());
+        } catch (IllegalArgumentException | NullPointerException ex) {
+            return Material.PAPER;
+        }
     }
 
     private static ItemStack item(Material material, String name, List<String> lore) {

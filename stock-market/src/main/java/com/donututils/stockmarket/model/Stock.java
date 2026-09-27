@@ -12,6 +12,7 @@ public final class Stock {
     private final String symbol;
     private String name;
     private String sector;
+    private String materialName = "PAPER";
 
     private double price;
     private double previousClose;
@@ -62,6 +63,12 @@ public final class Stock {
 
     public String sector() { return sector; }
     public void setSector(String sector) { this.sector = sector; }
+
+    /** The Bukkit Material name used as this stock's icon in menus, e.g. "GOLD_INGOT". */
+    public String materialName() { return materialName; }
+    public void setMaterialName(String materialName) {
+        this.materialName = (materialName == null || materialName.isBlank()) ? "PAPER" : materialName.toUpperCase();
+    }
 
     public double price() { return price; }
     public void setPrice(double price) { this.price = Math.max(0.01, price); }
