@@ -12,18 +12,17 @@ import org.bukkit.command.CommandSender;
 
 import java.util.Locale;
 
+/** Service lookups go through the plugin live (e.g. {@code plugin.getItemRegistry()}) rather than a
+ * reference captured at construction time, so a /shopadmin reload's rebuilt currency registry
+ * actually reaches this command instead of being silently shadowed by a stale one. */
 public final class ShopAdminCommand implements CommandExecutor {
 
     private static final String USAGE = "&cUsage: /shopadmin <additem|removeitem|setprice|setcurrency|setvolatility|setbuyable|setsellable|reload|save> ...";
 
     private final DynamicShopPlugin plugin;
-    private final ShopItemRegistry itemRegistry;
-    private final CurrencyRegistry currencyRegistry;
 
-    public ShopAdminCommand(DynamicShopPlugin plugin, ShopItemRegistry itemRegistry, CurrencyRegistry currencyRegistry) {
+    public ShopAdminCommand(DynamicShopPlugin plugin) {
         this.plugin = plugin;
-        this.itemRegistry = itemRegistry;
-        this.currencyRegistry = currencyRegistry;
     }
 
     @Override
@@ -46,7 +45,7 @@ public final class ShopAdminCommand implements CommandExecutor {
                     sender.sendMessage(color("&aDynamicShop config reloaded."));
                 }
                 case "save" -> {
-                    itemRegistry.saveAll();
+                    plugin.getItemRegistry().saveAll();
                     sender.sendMessage(color("&aShop data saved."));
                 }
                 default -> sender.sendMessage(color(USAGE));
@@ -62,6 +61,9 @@ public final class ShopAdminCommand implements CommandExecutor {
             sender.sendMessage(color("&cUsage: /shopadmin additem <material> <currency> <basePrice> [category]"));
             return;
         }
+        ShopItemRegistry itemRegistry = plugin.getItemRegistry();
+        CurrencyRegistry currencyRegistry = plugin.getCurrencyRegistry();
+
         String material = args[1].toUpperCase(Locale.ROOT);
         try {
             Material.valueOf(material);
@@ -101,6 +103,7 @@ public final class ShopAdminCommand implements CommandExecutor {
             sender.sendMessage(color("&cUsage: /shopadmin removeitem <material>"));
             return;
         }
+        ShopItemRegistry itemRegistry = plugin.getItemRegistry();
         String material = args[1].toUpperCase(Locale.ROOT);
         if (!itemRegistry.exists(material)) {
             sender.sendMessage(color("&cUnknown shop item: " + material));
@@ -122,7 +125,7 @@ public final class ShopAdminCommand implements CommandExecutor {
         }
         double price = Double.parseDouble(args[2]);
         item.setCurrentPrice(price);
-        itemRegistry.saveAll();
+        plugin.getItemRegistry().saveAll();
         sender.sendMessage(color("&aSet " + item.material() + "'s price to " + price + "."));
     }
 
@@ -136,12 +139,12 @@ public final class ShopAdminCommand implements CommandExecutor {
             return;
         }
         String currency = args[2].toLowerCase(Locale.ROOT);
-        if (!currencyRegistry.isAvailable(currency)) {
+        if (!plugin.getCurrencyRegistry().isAvailable(currency)) {
             sender.sendMessage(color("&cUnknown or disabled currency: " + currency));
             return;
         }
         item.setCurrency(currency);
-        itemRegistry.saveAll();
+        plugin.getItemRegistry().saveAll();
         sender.sendMessage(color("&aSet " + item.material() + "'s currency to " + currency + "."));
     }
 
@@ -156,7 +159,7 @@ public final class ShopAdminCommand implements CommandExecutor {
         }
         double volatility = Double.parseDouble(args[2]);
         item.setVolatility(volatility);
-        itemRegistry.saveAll();
+        plugin.getItemRegistry().saveAll();
         sender.sendMessage(color("&aSet " + item.material() + "'s volatility to " + volatility + "."));
     }
 
@@ -175,12 +178,12 @@ public final class ShopAdminCommand implements CommandExecutor {
         } else {
             item.setSellEnabled(value);
         }
-        itemRegistry.saveAll();
+        plugin.getItemRegistry().saveAll();
         sender.sendMessage(color("&aSet " + item.material() + "'s " + (buyFlag ? "buyable" : "sellable") + " flag to " + value + "."));
     }
 
     private ShopItem requireItem(CommandSender sender, String material) {
-        ShopItem item = itemRegistry.get(material);
+        ShopItem item = plugin.getItemRegistry().get(material);
         if (item == null) {
             sender.sendMessage(color("&cUnknown shop item: " + material.toUpperCase(Locale.ROOT)));
         }

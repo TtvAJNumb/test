@@ -142,9 +142,8 @@ public final class DynamicShopPlugin extends JavaPlugin {
         getServer().getPluginManager().registerEvents(
                 new ItemCollectionListener(itemRegistry, playerDataRegistry, tradingService, this::getDynamicShopConfig), this);
 
-        registerCommand("shop", new ShopCommand(this, guiService, itemRegistry, playerDataRegistry, tradingService,
-                loanService, economyStatsService, this::getDynamicShopConfig));
-        registerCommand("shopadmin", new ShopAdminCommand(this, itemRegistry, currencyRegistry));
+        registerCommand("shop", new ShopCommand(this));
+        registerCommand("shopadmin", new ShopAdminCommand(this));
 
         startTasks();
         httpServer.start();
@@ -226,6 +225,37 @@ public final class DynamicShopPlugin extends JavaPlugin {
 
     public Messages getMessages() {
         return messages;
+    }
+
+    // Commands fetch these live (rather than caching them at construction) so a /shopadmin reload
+    // that rebuilds currency-dependent services - most importantly the currency registry itself, if
+    // Vault/PlayerPoints wasn't ready at first startup - actually reaches the commands.
+    public ShopItemRegistry getItemRegistry() {
+        return itemRegistry;
+    }
+
+    public PlayerDataRegistry getPlayerDataRegistry() {
+        return playerDataRegistry;
+    }
+
+    public CurrencyRegistry getCurrencyRegistry() {
+        return currencyRegistry;
+    }
+
+    public TradingService getTradingService() {
+        return tradingService;
+    }
+
+    public ShopGuiService getGuiService() {
+        return guiService;
+    }
+
+    public LoanService getLoanService() {
+        return loanService;
+    }
+
+    public EconomyStatsService getEconomyStatsService() {
+        return economyStatsService;
     }
 
     private String formatPrice(String currencyId, double amount) {

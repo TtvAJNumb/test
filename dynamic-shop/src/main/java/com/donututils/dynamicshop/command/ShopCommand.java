@@ -2,7 +2,6 @@ package com.donututils.dynamicshop.command;
 
 import com.donututils.dynamicshop.DynamicShopPlugin;
 import com.donututils.dynamicshop.config.DynamicShopConfig;
-import com.donututils.dynamicshop.currency.CurrencyProvider;
 import com.donututils.dynamicshop.engine.PlayerDataRegistry;
 import com.donututils.dynamicshop.engine.ShopItemRegistry;
 import com.donututils.dynamicshop.model.Loan;
@@ -10,7 +9,6 @@ import com.donututils.dynamicshop.model.PlayerShopData;
 import com.donututils.dynamicshop.model.ShopItem;
 import com.donututils.dynamicshop.service.EconomyStatsService;
 import com.donututils.dynamicshop.service.LoanService;
-import com.donututils.dynamicshop.service.ShopGuiService;
 import com.donututils.dynamicshop.service.TradingService;
 import com.donututils.dynamicshop.util.InventoryUtil;
 import org.bukkit.ChatColor;
@@ -24,31 +22,17 @@ import org.bukkit.inventory.ItemStack;
 import java.util.LinkedHashMap;
 import java.util.Locale;
 import java.util.Map;
-import java.util.function.Supplier;
 
+/** All service lookups here go through the plugin (e.g. {@code plugin.getTradingService()}) rather
+ * than a reference captured at construction time - the plugin rebuilds several of these on
+ * /shopadmin reload (most importantly the currency registry, if Vault/PlayerPoints wasn't ready at
+ * first startup), and a cached reference here would silently keep using the stale ones. */
 public final class ShopCommand implements CommandExecutor {
 
     private final DynamicShopPlugin plugin;
-    private final ShopGuiService guiService;
-    private final ShopItemRegistry itemRegistry;
-    private final PlayerDataRegistry playerDataRegistry;
-    private final TradingService tradingService;
-    private final LoanService loanService;
-    private final EconomyStatsService economyStatsService;
-    private final Supplier<DynamicShopConfig> configSupplier;
 
-    public ShopCommand(DynamicShopPlugin plugin, ShopGuiService guiService, ShopItemRegistry itemRegistry,
-                        PlayerDataRegistry playerDataRegistry, TradingService tradingService,
-                        LoanService loanService, EconomyStatsService economyStatsService,
-                        Supplier<DynamicShopConfig> configSupplier) {
+    public ShopCommand(DynamicShopPlugin plugin) {
         this.plugin = plugin;
-        this.guiService = guiService;
-        this.itemRegistry = itemRegistry;
-        this.playerDataRegistry = playerDataRegistry;
-        this.tradingService = tradingService;
-        this.loanService = loanService;
-        this.economyStatsService = economyStatsService;
-        this.configSupplier = configSupplier;
     }
 
     @Override
@@ -65,7 +49,7 @@ public final class ShopCommand implements CommandExecutor {
 
         if (args.length == 0) {
             maybeSendTutorial(player);
-            guiService.open(player, "ALL");
+            plugin.getGuiService().open(player, "ALL");
             return true;
         }
 
@@ -73,7 +57,7 @@ public final class ShopCommand implements CommandExecutor {
             case "sell" -> sell(player, args);
             case "sellall" -> sellAll(player);
             case "autosell" -> autosell(player, args);
-            case "tutorial" -> sendTutorial(player);
+            case "tutorial" -> plugin.sendTutorial(player);
             case "loan" -> loan(player, args);
             case "repay" -> repay(player, args);
             default -> sender.sendMessage(color("&cUsage: /shop | /shop sell hand | /shop sellall | /shop autosell <item> <on|off> | /shop loan <amount> <currency> | /shop repay <amount> | /shop tutorial | /shop economy"));
@@ -82,21 +66,16 @@ public final class ShopCommand implements CommandExecutor {
     }
 
     private void maybeSendTutorial(Player player) {
-        if (!configSupplier.get().tutorialFeatureEnabled()) {
+        DynamicShopConfig config = plugin.getDynamicShopConfig();
+        if (!config.tutorialFeatureEnabled()) {
             return;
         }
-        PlayerShopData data = playerDataRegistry.get(player.getUniqueId());
+        PlayerShopData data = plugin.getPlayerDataRegistry().get(player.getUniqueId());
         if (data.tutorialSeen()) {
             return;
         }
         data.setTutorialSeen(true);
-        sendTutorial(player);
-    }
-
-    private void sendTutorial(Player player) {
-        for (String line : configSupplier.get().tutorialLines()) {
-            player.sendMessage(color(line));
-        }
+        plugin.sendTutorial(player);
     }
 
     private void sell(Player player, String[] args) {
@@ -110,6 +89,7 @@ public final class ShopCommand implements CommandExecutor {
             return;
         }
         String material = held.getType().name();
+        ShopItemRegistry itemRegistry = plugin.getItemRegistry();
         ShopItem item = itemRegistry.get(material);
         if (item == null || !item.sellEnabled()) {
             player.sendMessage(color("&cThat isn't sellable here."));
@@ -117,11 +97,14 @@ public final class ShopCommand implements CommandExecutor {
         }
         long quantity = held.getAmount();
         InventoryUtil.remove(player.getInventory(), held.getType(), quantity);
-        TradingService.TradeResult result = tradingService.sell(player.getUniqueId(), material, quantity);
+        TradingService.TradeResult result = plugin.getTradingService().sell(player.getUniqueId(), material, quantity);
         player.sendMessage(color((result.success() ? "&a" : "&c") + result.message()));
     }
 
     private void sellAll(Player player) {
+        ShopItemRegistry itemRegistry = plugin.getItemRegistry();
+        TradingService tradingService = plugin.getTradingService();
+
         Map<Material, Long> counts = new LinkedHashMap<>();
         ItemStack[] contents = player.getInventory().getContents();
         if (contents != null) {
@@ -164,17 +147,17 @@ public final class ShopCommand implements CommandExecutor {
             player.sendMessage(color("&cUsage: /shop autosell <item> <on|off>"));
             return;
         }
-        if (!configSupplier.get().autoSellFeatureEnabled()) {
+        if (!plugin.getDynamicShopConfig().autoSellFeatureEnabled()) {
             player.sendMessage(color("&cAuto-sell is disabled on this server."));
             return;
         }
         String material = args[1].toUpperCase(Locale.ROOT);
-        if (!itemRegistry.exists(material)) {
+        if (!plugin.getItemRegistry().exists(material)) {
             player.sendMessage(color("&cUnknown item: " + material));
             return;
         }
         boolean enable = args[2].equalsIgnoreCase("on");
-        PlayerShopData data = playerDataRegistry.get(player.getUniqueId());
+        PlayerShopData data = plugin.getPlayerDataRegistry().get(player.getUniqueId());
         data.setAutoSell(material, enable);
         player.sendMessage(color("&aAuto-sell for " + material + " turned " + (enable ? "&aon" : "&coff") + "&a."));
     }
@@ -191,7 +174,7 @@ public final class ShopCommand implements CommandExecutor {
             player.sendMessage(color("&cInvalid amount."));
             return;
         }
-        LoanService.LoanResult result = loanService.borrow(player.getUniqueId(), amount, args[2].toLowerCase(Locale.ROOT));
+        LoanService.LoanResult result = plugin.getLoanService().borrow(player.getUniqueId(), amount, args[2].toLowerCase(Locale.ROOT));
         player.sendMessage(color((result.success() ? "&a" : "&c") + result.message()));
     }
 
@@ -207,6 +190,7 @@ public final class ShopCommand implements CommandExecutor {
             player.sendMessage(color("&cInvalid amount."));
             return;
         }
+        LoanService loanService = plugin.getLoanService();
         LoanService.LoanResult result = loanService.repay(player.getUniqueId(), amount);
         player.sendMessage(color((result.success() ? "&a" : "&c") + result.message()));
 
@@ -217,13 +201,14 @@ public final class ShopCommand implements CommandExecutor {
     }
 
     private void sendEconomy(CommandSender sender) {
-        if (!configSupplier.get().gdpStatsFeatureEnabled()) {
+        DynamicShopConfig config = plugin.getDynamicShopConfig();
+        if (!config.gdpStatsFeatureEnabled()) {
             sender.sendMessage(color("&cEconomy stats are disabled on this server."));
             return;
         }
-        EconomyStatsService.EconomyStats stats = economyStatsService.compute();
+        EconomyStatsService.EconomyStats stats = plugin.getEconomyStatsService().compute();
         sender.sendMessage(color(String.format(Locale.US,
-                "&6&lShop Economy &7- last %dh", configSupplier.get().gdpWindowHours())));
+                "&6&lShop Economy &7- last %dh", config.gdpWindowHours())));
         sender.sendMessage(color(String.format(Locale.US, "&7GDP (transaction volume): &f%,.2f &7(%d trades)", stats.gdp(), stats.transactionCount())));
         sender.sendMessage(color(String.format(Locale.US, "&7Total outstanding debt: &f%,.2f", stats.totalDebt())));
         sender.sendMessage(color(String.format(Locale.US, "&7Price index vs launch: %s%+.2f%%",
