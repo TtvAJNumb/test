@@ -1,7 +1,7 @@
 package com.donututils.aichat.command;
 
 import com.donututils.aichat.AIChatPlugin;
-import com.donututils.aichat.client.ClaudeApiClient;
+import com.donututils.aichat.client.ChatClient;
 import com.donututils.aichat.config.AIChatConfig;
 import com.donututils.aichat.memory.ConversationMemory;
 import com.donututils.aichat.tool.ServerContextService;
@@ -19,13 +19,11 @@ import java.util.concurrent.ConcurrentHashMap;
 public final class AICommand implements CommandExecutor {
 
     private final AIChatPlugin plugin;
-    private final ClaudeApiClient apiClient;
     private final ConversationMemory memory;
     private final Map<UUID, Long> lastRequestMillis = new ConcurrentHashMap<>();
 
-    public AICommand(AIChatPlugin plugin, ClaudeApiClient apiClient, ConversationMemory memory) {
+    public AICommand(AIChatPlugin plugin, ConversationMemory memory) {
         this.plugin = plugin;
-        this.apiClient = apiClient;
         this.memory = memory;
     }
 
@@ -62,7 +60,8 @@ public final class AICommand implements CommandExecutor {
         }
 
         AIChatConfig config = plugin.getAIChatConfig();
-        if (config.apiKey() == null || config.apiKey().isBlank()) {
+        boolean needsApiKey = !"ollama".equalsIgnoreCase(config.provider());
+        if (needsApiKey && (config.apiKey() == null || config.apiKey().isBlank())) {
             sender.sendMessage(color("&cThe AI assistant isn't configured yet - ask an admin to set api-key in AIChat's config.yml."));
             return true;
         }
@@ -86,8 +85,9 @@ public final class AICommand implements CommandExecutor {
         UUID playerId = player.getUniqueId();
         List<ConversationMemory.Message> history = memory.get(playerId);
         ServerContextService context = plugin.getServerContext();
+        ChatClient chatClient = plugin.getChatClient();
 
-        apiClient.ask(config.apiKey(), config.model(), config.maxTokens(), config.systemPrompt(), history, message, context, sender)
+        chatClient.ask(config.apiKey(), config.model(), config.maxTokens(), config.systemPrompt(), history, message, context, sender)
                 .thenAccept(reply -> plugin.getServer().getScheduler().runTask(plugin, () -> {
                     Player target = plugin.getServer().getPlayer(playerId);
                     if (target == null) {

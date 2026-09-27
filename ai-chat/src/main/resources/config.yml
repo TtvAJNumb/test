@@ -1,14 +1,38 @@
-# AIChat - a general-purpose AI chat assistant for your server, powered by the Anthropic Claude API.
-# This plugin is standalone - it doesn't depend on Vault or any other plugin in this repo.
+# AIChat - a general-purpose AI chat assistant for your server. This plugin is standalone - it
+# doesn't depend on Vault or any other plugin in this repo.
 #
-# You need your own Anthropic API key (billed by usage - not free): https://console.anthropic.com/
+# Pick which AI provider to use. Options: "anthropic", "gemini", "ollama"
+#
+#   anthropic (PAID, no free tier) - Claude models. Best quality, and the only provider that
+#     currently supports the StockMarket/MarketWatch data tools below. Get a key (billed by usage)
+#     at https://console.anthropic.com/. Model examples:
+#       claude-sonnet-5           - balanced, good default
+#       claude-opus-5-5           - most capable, slower/costlier
+#       claude-haiku-4-5-20251001 - fastest/cheapest
+#       claude-fable-5-1          - alternative general-purpose model
+#
+#   gemini (FREE tier available) - Google's Gemini models. Get a free API key at
+#     https://aistudio.google.com/apikey - it starts with "AIzaSy...". Free tier has rate limits
+#     but no billing required. No data-tool support yet - plain chat only. Model examples:
+#       gemini-2.0-flash    - fast, free-tier friendly default
+#       gemini-1.5-flash    - older fast model, also free-tier eligible
+#       gemini-1.5-pro      - more capable, lower free-tier limits
+#
+#   ollama (FREE, self-hosted) - runs entirely on your own hardware, no API key, no internet
+#     required, no usage limits. Needs Ollama (https://ollama.com) installed and running
+#     (`ollama pull llama3.1` then `ollama serve`) either on the same machine as the server or one
+#     you can reach over the network. No data-tool support yet - plain chat only. Model examples
+#     (must be already pulled on the Ollama server): llama3.1, llama3.2, mistral, qwen2.5
+provider: "anthropic"
+
+# Required for anthropic and gemini. Not needed for ollama unless you've put your own auth in front
+# of it (sent as a Bearer token if set).
 api-key: ""
 
-# Which Claude model to use. A few current options:
-#   claude-sonnet-5           - balanced, good default
-#   claude-opus-5-5           - most capable, slower/costlier
-#   claude-haiku-4-5-20251001 - fastest/cheapest
-#   claude-fable-5-1          - alternative general-purpose model
+# Only used when provider is "ollama": the base URL of your Ollama server.
+ollama-base-url: "http://localhost:11434"
+
+# The model name for whichever provider you picked above - see the examples in the comments above.
 model: "claude-sonnet-5"
 
 # The assistant's name, shown as a chat prefix (e.g. "Astra: Hey there!").

@@ -1,6 +1,9 @@
 package com.donututils.aichat;
 
+import com.donututils.aichat.client.ChatClient;
 import com.donututils.aichat.client.ClaudeApiClient;
+import com.donututils.aichat.client.GeminiApiClient;
+import com.donututils.aichat.client.OllamaApiClient;
 import com.donututils.aichat.command.AICommand;
 import com.donututils.aichat.config.AIChatConfig;
 import com.donututils.aichat.memory.ConversationMemory;
@@ -10,12 +13,16 @@ import org.bukkit.command.PluginCommand;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.plugin.java.JavaPlugin;
 
+import java.util.Locale;
+
 /** A general-purpose in-game AI chat assistant, standalone - no dependency on any other plugin in this
- * repo. Optionally answers server-specific questions using real data from StockMarket/MarketWatch if
- * those happen to be installed, via read-only tool calls (see {@link ServerContextService}). */
+ * repo. Supports Anthropic, Gemini, or a local Ollama server as the backing provider (see config.yml).
+ * Optionally answers server-specific questions using real data from StockMarket/MarketWatch if those
+ * happen to be installed, via read-only tool calls (see {@link ServerContextService}) - currently only
+ * wired up for the Anthropic provider. */
 public final class AIChatPlugin extends JavaPlugin {
 
-    private ClaudeApiClient apiClient;
+    private ChatClient chatClient;
     private ConversationMemory memory;
     private volatile ServerContextService serverContext;
     private volatile AIChatConfig config;
@@ -24,19 +31,21 @@ public final class AIChatPlugin extends JavaPlugin {
     public void onEnable() {
         saveDefaultConfig();
 
-        apiClient = new ClaudeApiClient(this);
         memory = new ConversationMemory();
         config = loadConfigValues();
+        chatClient = buildChatClient(config);
         serverContext = new ServerContextService();
 
-        registerCommand("ai", new AICommand(this, apiClient, memory));
+        registerCommand("ai", new AICommand(this, memory));
 
-        getLogger().info("AIChat enabled" + (serverContext.hasTools() ? " with server-data tools available." : " (no server-data tools detected - StockMarket/MarketWatch not installed)."));
+        getLogger().info("AIChat enabled using provider '" + config.provider() + "'"
+                + (serverContext.hasTools() ? " with server-data tools available." : " (no server-data tools detected - StockMarket/MarketWatch not installed, or provider doesn't support tools)."));
     }
 
     public void reloadAIChat() {
         reloadConfig();
         config = loadConfigValues();
+        chatClient = buildChatClient(config);
         serverContext = new ServerContextService();
     }
 
@@ -44,15 +53,29 @@ public final class AIChatPlugin extends JavaPlugin {
         return config;
     }
 
+    public ChatClient getChatClient() {
+        return chatClient;
+    }
+
     public ServerContextService getServerContext() {
         return serverContext;
+    }
+
+    private ChatClient buildChatClient(AIChatConfig config) {
+        return switch (config.provider().toLowerCase(Locale.ROOT)) {
+            case "gemini" -> new GeminiApiClient(this);
+            case "ollama" -> new OllamaApiClient(this, config.ollamaBaseUrl());
+            default -> new ClaudeApiClient(this);
+        };
     }
 
     private AIChatConfig loadConfigValues() {
         FileConfiguration cfg = getConfig();
         return new AIChatConfig(
+                cfg.getString("provider", "anthropic"),
                 cfg.getString("api-key", ""),
                 cfg.getString("model", "claude-sonnet-5"),
+                cfg.getString("ollama-base-url", "http://localhost:11434"),
                 cfg.getString("assistant-name", "Astra"),
                 cfg.getString("system-prompt", "You are a helpful assistant for this Minecraft server."),
                 cfg.getInt("max-tokens", 400),

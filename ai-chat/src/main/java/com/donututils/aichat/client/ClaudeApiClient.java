@@ -25,7 +25,7 @@ import java.util.logging.Level;
  * the model's final reply is grounded in actual server data instead of a guess. Hand-rolled JSON via
  * {@link MiniJson}, same dependency-free approach used across this repo.
  */
-public final class ClaudeApiClient {
+public final class ClaudeApiClient implements ChatClient {
 
     private static final String ENDPOINT = "https://api.anthropic.com/v1/messages";
     private static final String ANTHROPIC_VERSION = "2023-06-01";
@@ -41,9 +41,7 @@ public final class ClaudeApiClient {
                 .build();
     }
 
-    public record Reply(boolean success, String text) {
-    }
-
+    @Override
     public CompletableFuture<Reply> ask(String apiKey, String model, int maxTokens, String systemPrompt,
                                          List<ConversationMemory.Message> history, String userMessage,
                                          ServerContextService context, CommandSender sender) {
