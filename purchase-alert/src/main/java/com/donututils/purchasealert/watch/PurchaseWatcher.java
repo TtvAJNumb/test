@@ -64,11 +64,7 @@ public final class PurchaseWatcher implements Runnable {
                 continue;
             }
             announcedOrderIds.add(order.id());
-            // A chargeback/expiry job also reaches "delivered" once its removeshards-style command
-            // runs - that's not a new sale, so it must not get the same "just purchased" message.
-            if (isNewPurchaseEvent(order)) {
-                announce(order);
-            }
+            announce(order);
         }
 
         // Bound memory to roughly the size of the "recent orders" window instead of growing forever.
@@ -83,23 +79,44 @@ public final class PurchaseWatcher implements Runnable {
         return order.status() != null && order.status().equalsIgnoreCase("delivered");
     }
 
-    /** True for a genuine new purchase (or renewal); false for a chargeback/expiry job. */
-    private static boolean isNewPurchaseEvent(OrderRecord order) {
-        String event = order.event();
-        if (event == null || event.isBlank()) {
-            return true;
-        }
-        return !event.equalsIgnoreCase("chargeback") && !event.equalsIgnoreCase("expiry");
-    }
-
+    /**
+     * A chargeback/expiry job also reaches "delivered" once its removeshards-style command runs -
+     * it's a real event worth announcing, just not the same one as a new sale, so it needs its own
+     * title/wording rather than reusing "just purchased".
+     */
     private void announce(OrderRecord order) {
         String username = order.username() != null ? order.username() : "an unknown player";
         String product = order.product() != null ? order.product() : "an unknown item";
-        webhook.sendAlert(
-                "New store purchase",
-                username + " just purchased **" + product + "**!",
-                0x57F287,
-                Map.of("Player", username, "Item", product)
-        );
+        String event = order.event() == null ? "" : order.event();
+
+        if (event.equalsIgnoreCase("chargeback")) {
+            webhook.sendAlert(
+                    "Store purchase refunded",
+                    username + "'s purchase of **" + product + "** was refunded and the item was removed.",
+                    0xED4245,
+                    Map.of("Player", username, "Item", product)
+            );
+        } else if (event.equalsIgnoreCase("expiry")) {
+            webhook.sendAlert(
+                    "Subscription expired",
+                    username + "'s **" + product + "** subscription ended and the item was removed.",
+                    0xFEE75C,
+                    Map.of("Player", username, "Item", product)
+            );
+        } else if (event.equalsIgnoreCase("renewal")) {
+            webhook.sendAlert(
+                    "Store subscription renewed",
+                    username + " renewed **" + product + "**!",
+                    0x57F287,
+                    Map.of("Player", username, "Item", product)
+            );
+        } else {
+            webhook.sendAlert(
+                    "New store purchase",
+                    username + " just purchased **" + product + "**!",
+                    0x57F287,
+                    Map.of("Player", username, "Item", product)
+            );
+        }
     }
 }
