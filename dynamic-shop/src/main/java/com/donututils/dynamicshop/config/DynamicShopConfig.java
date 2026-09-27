@@ -25,7 +25,7 @@ public record DynamicShopConfig(
         String httpBindAddress,
         int httpPort,
         String httpApiKey,
-        int gdpSnapshotIntervalMinutes,
+        int gdpWindowHours,
         List<String> tutorialLines
 ) {
 

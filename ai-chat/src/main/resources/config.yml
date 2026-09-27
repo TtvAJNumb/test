@@ -12,11 +12,12 @@
 #       claude-fable-5-1          - alternative general-purpose model
 #
 #   gemini (FREE tier available) - Google's Gemini models. Get a free API key at
-#     https://aistudio.google.com/apikey - it starts with "AIzaSy...". Free tier has rate limits
-#     but no billing required. No data-tool support yet - plain chat only. Model examples:
-#       gemini-2.0-flash    - fast, free-tier friendly default
-#       gemini-1.5-flash    - older fast model, also free-tier eligible
-#       gemini-1.5-pro      - more capable, lower free-tier limits
+#     https://aistudio.google.com/apikey. Free tier has rate limits but no billing required. No
+#     data-tool support yet - plain chat only. Google retires old model names periodically (if you
+#     get a "model no longer available" error, it'll tell you the replacement) - as of this writing:
+#       gemini-flash-latest - always points at the current fast/free-tier-friendly model, good default
+#       gemini-3.0-flash    - fast, free-tier friendly
+#       gemini-3.0-pro      - more capable, lower free-tier limits
 #
 #   ollama (FREE, self-hosted) - runs entirely on your own hardware, no API key, no internet
 #     required, no usage limits. Needs Ollama (https://ollama.com) installed and running

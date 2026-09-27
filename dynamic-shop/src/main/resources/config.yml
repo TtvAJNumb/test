@@ -52,8 +52,10 @@ web-server:
   api-key: ""
 
 gdp:
-  # How often (minutes) to record an economy snapshot for GDP/debt/inflation tracking.
-  snapshot-interval-minutes: 60
+  # "GDP" here means total buy+sell transaction volume in this trailing window - a measure of how
+  # active the shop economy currently is, computed live from the transaction log (no separate
+  # snapshot storage needed).
+  window-hours: 24
 
 tutorial:
   # Sent as separate chat lines, in order, the first time a player opens the shop.
