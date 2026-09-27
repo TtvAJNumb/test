@@ -1,0 +1,17 @@
+name: Arsenal
+version: ${project.version}
+main: com.donututils.arsenal.ArsenalPlugin
+api-version: "1.21"
+folia-supported: false
+description: Custom raycast-based firearms - headshot/limb damage multipliers, ammo/magazines, and spread-based recoil. Built entirely from vanilla Bukkit/Paper APIs, no WeaponMechanics dependency.
+authors: [donututils]
+commands:
+  arsenal:
+    description: Give weapons/ammo, list configured weapons, or reload config.
+    usage: /arsenal [give <player> <weapon>|giveammo <player> <weapon> [amount]|list|reload]
+    permission: arsenal.admin
+    permission-message: "&cYou do not have permission to use /arsenal."
+permissions:
+  arsenal.admin:
+    description: Allows giving weapons/ammo and reloading Arsenal's config
+    default: op

@@ -1,0 +1,50 @@
+# Arsenal - custom ballistics/firearms built entirely from vanilla Bukkit/Paper APIs (no
+# WeaponMechanics dependency). Weapons are ordinary items (e.g. a stick) wearing a custom
+# resource-pack model via CustomModelData - see the resource pack pipeline doc for how to build the
+# actual 3D model/texture. Ammo count and weapon identity are stored in the item's own
+# PersistentDataContainer, so items keep working correctly even after being dropped/picked back up.
+#
+# "Recoil" here is implemented as growing bullet spread the longer you hold the trigger, not a forced
+# camera kick - that's the reliable, portable way to do it without camera-control APIs.
+weapons:
+  ak47:
+    material: STICK
+    custom-model-data: 100001
+    display-name: "&cAK-47"
+    damage:
+      base: 4.0
+      headshot-multiplier: 2.5
+      limb-multiplier: 0.75
+    magazine-size: 30
+    reload-seconds: 2.5
+    fire-cooldown-ms: 150
+    max-range: 60.0
+    spread:
+      base-degrees: 1.0
+      max-degrees: 6.0
+      growth-per-shot-degrees: 0.5
+      decay-per-second-degrees: 4.0
+    ammo:
+      material: PAPER
+      display-name: "&7AK-47 Magazine"
+
+  pistol:
+    material: STICK
+    custom-model-data: 100010
+    display-name: "&fPistol"
+    damage:
+      base: 3.0
+      headshot-multiplier: 3.0
+      limb-multiplier: 0.7
+    magazine-size: 12
+    reload-seconds: 1.5
+    fire-cooldown-ms: 300
+    max-range: 40.0
+    spread:
+      base-degrees: 0.5
+      max-degrees: 3.0
+      growth-per-shot-degrees: 0.5
+      decay-per-second-degrees: 5.0
+    ammo:
+      material: PAPER
+      display-name: "&7Pistol Magazine"

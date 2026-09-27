@@ -20,6 +20,7 @@
         <module>dynamic-shop</module>
         <module>ledger</module>
         <module>municipal</module>
+        <module>arsenal</module>
     </modules>
 
     <properties>
