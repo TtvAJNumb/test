@@ -1,0 +1,25 @@
+name: DynamicShop
+version: ${project.version}
+main: com.donututils.dynamicshop.DynamicShopPlugin
+api-version: "1.21"
+folia-supported: false
+description: A general-purpose dynamic-pricing item shop - supply/demand-adjusted prices, multi-currency (Vault money + PlayerPoints shards), auto-sell, exploit protection, loans, and economy stats. Every major feature can be toggled off in config.
+authors: [donututils]
+commands:
+  shop:
+    description: Open the item shop, or sell/autosell/loan/economy from chat.
+    usage: /shop [sell hand|sellall|autosell <item> <on|off>|loan <amount> <currency>|repay <amount>|tutorial|economy]
+    permission: dynamicshop.command.shop
+    permission-message: "&cYou do not have permission to use /shop."
+  shopadmin:
+    description: Manage the shop's items and currencies.
+    usage: /shopadmin <additem|removeitem|setprice|setcurrency|setvolatility|setbuyable|setsellable|reload|save> ...
+    permission: dynamicshop.admin
+    permission-message: "&cYou do not have permission to manage the shop."
+permissions:
+  dynamicshop.command.shop:
+    description: Allows using the item shop
+    default: true
+  dynamicshop.admin:
+    description: Allows managing the shop's items and currencies
+    default: op

@@ -51,6 +51,7 @@ public final class PlayerDataStore {
             for (String material : s.getStringList("autosell")) {
                 data.setAutoSell(material, true);
             }
+            data.setTutorialSeen(s.getBoolean("tutorialSeen", false));
             map.put(playerId, data);
         }
         return map;
@@ -62,6 +63,7 @@ public final class PlayerDataStore {
             String path = "players." + entry.getKey();
             yaml.set(path + ".unlocked", new ArrayList<>(entry.getValue().unlockedMaterials()));
             yaml.set(path + ".autosell", new ArrayList<>(entry.getValue().autoSellMaterials()));
+            yaml.set(path + ".tutorialSeen", entry.getValue().tutorialSeen());
         }
         try {
             AtomicFiles.writeYaml(yaml, file);

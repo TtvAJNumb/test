@@ -10,6 +10,7 @@ public final class PlayerShopData {
 
     private final Set<String> unlockedMaterials = ConcurrentHashMap.newKeySet();
     private final Set<String> autoSellMaterials = ConcurrentHashMap.newKeySet();
+    private volatile boolean tutorialSeen;
 
     public boolean hasUnlocked(String material) {
         return unlockedMaterials.contains(material.toUpperCase());
@@ -38,5 +39,13 @@ public final class PlayerShopData {
 
     public Set<String> autoSellMaterials() {
         return autoSellMaterials;
+    }
+
+    public boolean tutorialSeen() {
+        return tutorialSeen;
+    }
+
+    public void setTutorialSeen(boolean tutorialSeen) {
+        this.tutorialSeen = tutorialSeen;
     }
 }
