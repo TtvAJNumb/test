@@ -15,6 +15,7 @@
         <module>purchase-alert</module>
         <module>team-leaderboard</module>
         <module>market-watch</module>
+        <module>stock-market</module>
     </modules>
 
     <properties>

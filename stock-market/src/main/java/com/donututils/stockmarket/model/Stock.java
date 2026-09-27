@@ -31,6 +31,7 @@ public final class Stock {
     private boolean halted;
     private long haltedUntilMillis;
     private boolean delisted;
+    private long dayStartMillis;
 
     private double eventDriftBoost;
     private double eventVolatilityBoost;
@@ -51,6 +52,7 @@ public final class Stock {
         this.sharesOutstanding = sharesOutstanding;
         this.drift = drift;
         this.volatility = volatility;
+        this.dayStartMillis = System.currentTimeMillis();
     }
 
     public String symbol() { return symbol; }
@@ -79,6 +81,7 @@ public final class Stock {
     public long volumeToday() { return volumeToday; }
     public void addVolume(long shares) { this.volumeToday += shares; }
     public void resetVolume() { this.volumeToday = 0; }
+    public void setVolumeToday(long v) { this.volumeToday = v; }
 
     public long sharesOutstanding() { return sharesOutstanding; }
     public void setSharesOutstanding(long v) { this.sharesOutstanding = v; }
@@ -122,8 +125,31 @@ public final class Stock {
 
     public long haltedUntilMillis() { return haltedUntilMillis; }
 
+    /** For loading saved state back in - unlike {@link #halt}, this can also restore "not halted". */
+    public void restoreHalt(boolean halted, long haltedUntilMillis) {
+        this.halted = halted;
+        this.haltedUntilMillis = haltedUntilMillis;
+    }
+
     public boolean delisted() { return delisted; }
     public void setDelisted(boolean v) { this.delisted = v; }
+
+    public long dayStartMillis() { return dayStartMillis; }
+    public void setDayStartMillis(long v) { this.dayStartMillis = v; }
+
+    /** Rolls the day markers over (previousClose/open/high/low, volume) and resets the day clock. */
+    public void rolloverDay(long nowMillis) {
+        this.previousClose = this.price;
+        this.dayOpen = this.price;
+        this.dayHigh = this.price;
+        this.dayLow = this.price;
+        this.volumeToday = 0;
+        this.dayStartMillis = nowMillis;
+    }
+
+    public double dayChangePercent() {
+        return previousClose == 0 ? 0 : ((price - previousClose) / previousClose) * 100.0;
+    }
 
     public void applyEvent(double driftBoost, double volatilityBoost, long untilMillis) {
         this.eventDriftBoost = driftBoost;

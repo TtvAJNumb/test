@@ -1,0 +1,43 @@
+name: StockMarket
+version: ${project.version}
+main: com.donututils.stockmarket.StockMarketPlugin
+api-version: "1.21"
+folia-supported: false
+description: A general-purpose stock market simulation for any server - real-time-ish prices driven by a drift/volatility model plus real player trading pressure, dividends, splits, IPOs, circuit breakers, and Discord alerts. Uses Vault for economy, so it works with any economy plugin.
+authors: [donututils]
+depend:
+  - Vault
+commands:
+  stocks:
+    description: Open the stock market, or buy/sell/check a price from chat.
+    usage: /stocks [price|buy|sell] ...
+    permission: stockmarket.command.stocks
+    permission-message: "&cYou do not have permission to use /stocks."
+  portfolio:
+    description: View your stock portfolio.
+    usage: /portfolio
+    permission: stockmarket.command.portfolio
+    permission-message: "&cYou do not have permission to use /portfolio."
+  stockleaderboard:
+    description: Shows the richest stock market portfolios on the server.
+    usage: /stockleaderboard
+    permission: stockmarket.command.stockleaderboard
+    permission-message: "&cYou do not have permission to use /stockleaderboard."
+  stockadmin:
+    description: Manage the stock market (create/delist/split/halt/resume/event/reload/save).
+    usage: /stockadmin <create|delist|split|halt|resume|event|reload|save> ...
+    permission: stockmarket.admin
+    permission-message: "&cYou do not have permission to manage the stock market."
+permissions:
+  stockmarket.command.stocks:
+    description: Allows viewing and trading on the stock market
+    default: true
+  stockmarket.command.portfolio:
+    description: Allows viewing your own portfolio
+    default: true
+  stockmarket.command.stockleaderboard:
+    description: Allows viewing the stock market leaderboard
+    default: true
+  stockmarket.admin:
+    description: Allows managing stocks (create, delist, split, halt, events)
+    default: op

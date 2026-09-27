@@ -1,0 +1,51 @@
+# ── Price engine ──────────────────────────────────────────────────────────────
+# How often (in seconds) every stock's price updates. Each tick is a random-walk step (drift +
+# volatility) plus a small nudge from any real buying/selling since the last tick.
+tick-interval-seconds: 30
+
+# How long (in real minutes) one "trading day" lasts before day-open/high/low/volume reset and
+# today's close becomes tomorrow's "previous close". Real markets use 24h; this defaults to 60
+# minutes so day-based stats (like % change today) are actually meaningful within a normal play
+# session instead of requiring a full real day to see them move.
+trading-day-length-minutes: 60
+
+# The largest fraction of a stock's market cap that one tick's net buying/selling can move its
+# price, regardless of how much money was actually traded. Prevents one large trade (or a single
+# player) from dominating the price.
+max-trade-impact-percent-per-tick: 2.0
+
+# If a stock's price would move more than this percent in one tick (from the random walk and/or
+# trade pressure combined), the move is capped at this percent and the stock is halted from trading
+# for circuit-breaker-cooldown-seconds - the same idea as a real exchange pausing a stock that's
+# crashing or spiking too fast.
+circuit-breaker-threshold-percent: 15.0
+circuit-breaker-cooldown-seconds: 300
+
+# ── Trading ───────────────────────────────────────────────────────────────────
+# Broker commission charged on every trade, as a percent of the trade's value.
+broker-fee-percent: 0.5
+
+# No player can own more than this percent of a stock's total shares outstanding. Set to 0 to
+# disable the cap.
+max-shares-per-player-percent: 10.0
+
+# Minimum time between a player's trades, in milliseconds. Sanity check against script/macro abuse.
+trade-rate-limit-millis: 1000
+
+# ── Discord ───────────────────────────────────────────────────────────────────
+discord:
+  webhook-url: ""
+  username: "StockMarket"
+  alerts:
+    big-mover: true
+    circuit-breaker: true
+    ipo: true
+    split: true
+    delisting: true
+  daily-summary:
+    enabled: false
+    hour-of-day-utc: 12
+
+# A single tick move of at least this percent also posts a "big mover" Discord alert (if enabled
+# above), separately from the circuit breaker.
+big-mover-alert-threshold-percent: 5.0
