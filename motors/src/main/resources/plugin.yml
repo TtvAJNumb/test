@@ -5,6 +5,8 @@ api-version: "1.21"
 folia-supported: false
 description: Custom drivable vehicles built on vanilla boat/minecart riding physics - fuel, wear/maintenance, and DB-backed ownership that survives restarts. No InfiniteVehicles dependency.
 authors: [donututils]
+depend:
+  - Vault
 commands:
   motors:
     description: Give vehicle spawners, check fuel/wear, refuel, repair, or list vehicles.
