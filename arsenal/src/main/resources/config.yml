@@ -8,7 +8,10 @@
 # camera kick - that's the reliable, portable way to do it without camera-control APIs.
 weapons:
   ak47:
-    material: STICK
+    # CROSSBOW instead of a bare STICK: it's a real two-handed vanilla weapon model, so it already
+    # looks like something before any resource pack is applied. custom-model-data still lets a
+    # resource pack override it with an actual gun mesh later - see resource-pack-pipeline.md.
+    material: CROSSBOW
     custom-model-data: 100001
     display-name: "&cAK-47"
     damage:
@@ -25,11 +28,11 @@ weapons:
       growth-per-shot-degrees: 0.5
       decay-per-second-degrees: 4.0
     ammo:
-      material: PAPER
+      material: IRON_NUGGET
       display-name: "&7AK-47 Magazine"
 
   pistol:
-    material: STICK
+    material: CROSSBOW
     custom-model-data: 100010
     display-name: "&fPistol"
     damage:
@@ -46,5 +49,5 @@ weapons:
       growth-per-shot-degrees: 0.5
       decay-per-second-degrees: 5.0
     ammo:
-      material: PAPER
+      material: IRON_NUGGET
       display-name: "&7Pistol Magazine"

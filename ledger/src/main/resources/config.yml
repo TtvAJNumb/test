@@ -52,6 +52,13 @@ corporations:
   # of profit relative to treasury size.
   profit-price-sensitivity: 0.5
   price-tick-minutes: 5
+  # /corp report figures are founder-supplied and unverified - nothing stops a founder from typing
+  # an arbitrary number. To stop that from printing unlimited money, BOTH the price move and the
+  # money actually credited to the treasury are capped at this percent of the corp's current market
+  # cap per report (not the raw reported profit), and report-cooldown-minutes stops rapid repeats
+  # from compounding that into unlimited money over time.
+  max-report-impact-percent: 25.0
+  report-cooldown-minutes: 60
 
 tax:
   # Percent of a player's total checking+savings balance collected periodically as wealth tax.

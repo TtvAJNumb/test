@@ -13,6 +13,7 @@ import com.donututils.stockmarket.engine.StockRegistry;
 import com.donututils.stockmarket.gui.MenuClickListener;
 import com.donututils.stockmarket.gui.StockMenus;
 import com.donututils.stockmarket.listener.ChatQuantityPrompt;
+import com.donututils.stockmarket.service.DividendPool;
 import com.donututils.stockmarket.service.DividendService;
 import com.donututils.stockmarket.service.MarketAdminService;
 import com.donututils.stockmarket.service.MarketSummaryTask;
@@ -109,10 +110,11 @@ public final class StockMarketPlugin extends JavaPlugin {
         alerts = new StockAlerts(webhook, this::getStockMarketConfig);
 
         priceEngine = new PriceEngine(registry, historyStore, alerts, this::getStockMarketConfig);
-        tradingService = new TradingService(registry, economy, portfolioStore, holderIndex, transactionLog, this::getStockMarketConfig);
+        DividendPool dividendPool = new DividendPool();
+        tradingService = new TradingService(registry, economy, portfolioStore, holderIndex, transactionLog, this::getStockMarketConfig, dividendPool);
         portfolioService = new PortfolioService(registry, portfolioStore, economy);
         adminService = new MarketAdminService(registry, portfolioStore, holderIndex, economy, alerts);
-        dividendService = new DividendService(registry, holderIndex, portfolioStore, economy, getLogger());
+        dividendService = new DividendService(registry, holderIndex, portfolioStore, economy, dividendPool, getLogger());
         summaryTask = new MarketSummaryTask(registry, alerts, this::getStockMarketConfig);
         quantityPrompt = new ChatQuantityPrompt(this);
 

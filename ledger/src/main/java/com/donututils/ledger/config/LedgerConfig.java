@@ -25,6 +25,8 @@ public record LedgerConfig(
         double corpBaseVolatility,
         double corpProfitPriceSensitivity,
         int corpPriceTickMinutes,
+        int corpReportCooldownMinutes,
+        double corpMaxReportImpactPercent,
 
         double wealthTaxPercent,
         int wealthTaxTickHours,

@@ -19,6 +19,7 @@ public final class Corporation {
     private boolean trustProtected;
 
     private transient double pendingNetFlow;
+    private transient long lastReportedAtMillis;
 
     public Corporation(long id, String name, String ticker, UUID founderId, int totalShares,
                         double sharePrice, String sector, long foundedAtMillis) {
@@ -106,5 +107,13 @@ public final class Corporation {
         double flow = pendingNetFlow;
         pendingNetFlow = 0;
         return flow;
+    }
+
+    public long lastReportedAtMillis() {
+        return lastReportedAtMillis;
+    }
+
+    public void setLastReportedAtMillis(long lastReportedAtMillis) {
+        this.lastReportedAtMillis = lastReportedAtMillis;
     }
 }

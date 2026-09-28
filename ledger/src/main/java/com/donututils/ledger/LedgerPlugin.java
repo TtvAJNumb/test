@@ -179,6 +179,8 @@ public final class LedgerPlugin extends JavaPlugin implements Listener {
                 cfg.getDouble("corporations.base-volatility", 0.01),
                 cfg.getDouble("corporations.profit-price-sensitivity", 0.5),
                 cfg.getInt("corporations.price-tick-minutes", 5),
+                cfg.getInt("corporations.report-cooldown-minutes", 60),
+                cfg.getDouble("corporations.max-report-impact-percent", 25.0),
                 cfg.getDouble("tax.wealth-tax-percent", 1.0),
                 cfg.getInt("tax.wealth-tax-tick-hours", 24),
                 cfg.getDouble("tax.transaction-tax-percent", 2.0),

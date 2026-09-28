@@ -30,17 +30,19 @@ public final class TradingService {
     private final HolderIndexStore holderIndex;
     private final TransactionLogStore transactionLog;
     private final Supplier<StockMarketConfig> configSupplier;
+    private final DividendPool dividendPool;
     private final Map<UUID, Long> lastTradeAtMillis = new ConcurrentHashMap<>();
 
     public TradingService(StockRegistry registry, VaultEconomyBridge economy, PortfolioStore portfolioStore,
                            HolderIndexStore holderIndex, TransactionLogStore transactionLog,
-                           Supplier<StockMarketConfig> configSupplier) {
+                           Supplier<StockMarketConfig> configSupplier, DividendPool dividendPool) {
         this.registry = registry;
         this.economy = economy;
         this.portfolioStore = portfolioStore;
         this.holderIndex = holderIndex;
         this.transactionLog = transactionLog;
         this.configSupplier = configSupplier;
+        this.dividendPool = dividendPool;
     }
 
     public record TradeResult(boolean success, String message, TransactionRecord record) {
@@ -107,6 +109,7 @@ public final class TradingService {
 
         stock.addVolume(shares);
         stock.addNetFlow(gross);
+        dividendPool.credit(fee);
 
         TransactionRecord record = new TransactionRecord(now, playerId, playerName, stock.symbol(), TransactionSide.BUY, shares, price, fee);
         transactionLog.append(record);
@@ -162,6 +165,7 @@ public final class TradingService {
 
         stock.addVolume(shares);
         stock.addNetFlow(-gross);
+        dividendPool.credit(fee);
 
         TransactionRecord record = new TransactionRecord(now, playerId, playerName, stock.symbol(), TransactionSide.SELL, shares, price, fee);
         transactionLog.append(record);

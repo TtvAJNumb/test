@@ -169,7 +169,16 @@ public final class CorporationManager {
     }
 
     /** Owner-reported revenue/expenses for a reporting period. Nudges share price by the reported
-     * profit/loss relative to market cap, and flows the profit into the corporation's treasury. */
+     * profit/loss relative to market cap, and flows a matching, equally-clamped amount into the
+     * corporation's treasury.
+     * <p>
+     * Both the price move AND the treasury credit are capped at
+     * {@code corporations.max-report-impact-percent} of the corporation's current market cap - the
+     * treasury is deliberately NOT credited with the raw reported profit, since that figure is
+     * founder-supplied and unverified (nothing stops a founder from typing an arbitrary number).
+     * Capping it to the same bounded fraction already used for the price nudge means one report can
+     * only ever move real money by a small, size-relative amount, and {@code report-cooldown-minutes}
+     * stops that from being repeated rapidly to compound into unlimited money. */
     public CorpResult reportFinancials(OfflinePlayer reporter, Corporation corp, double revenue, double expenses) {
         if (!corp.founderId().equals(reporter.getUniqueId())) {
             return CorpResult.fail("Only " + corp.name() + "'s founder can report its financials.");
@@ -177,22 +186,35 @@ public final class CorporationManager {
         if (revenue < 0 || expenses < 0) {
             return CorpResult.fail("Revenue and expenses can't be negative.");
         }
-        double profit = revenue - expenses;
-        corp.setTreasuryBalance(corp.treasuryBalance() + profit);
 
+        LedgerConfig config = configSupplier.get();
+        long cooldownMillis = config.corpReportCooldownMinutes() * 60_000L;
+        long now = System.currentTimeMillis();
+        long sinceLast = now - corp.lastReportedAtMillis();
+        if (corp.lastReportedAtMillis() > 0 && sinceLast < cooldownMillis) {
+            long remainingMinutes = (cooldownMillis - sinceLast) / 60_000L + 1;
+            return CorpResult.fail(corp.name() + " can report again in " + remainingMinutes + " minute(s).");
+        }
+
+        double profit = revenue - expenses;
         double marketCap = Math.max(1.0, corp.marketCap());
-        double sensitivity = configSupplier.get().corpProfitPriceSensitivity();
-        double rawImpact = (profit / marketCap) * sensitivity;
-        double clampedImpact = Math.max(-0.25, Math.min(0.25, rawImpact));
+        double maxImpactFraction = config.corpMaxReportImpactPercent() / 100.0;
+        double rawImpact = (profit / marketCap) * config.corpProfitPriceSensitivity();
+        double clampedImpact = Math.max(-maxImpactFraction, Math.min(maxImpactFraction, rawImpact));
+
         corp.setSharePrice(corp.sharePrice() * (1 + clampedImpact));
+        corp.setTreasuryBalance(corp.treasuryBalance() + marketCap * clampedImpact);
+        corp.setLastReportedAtMillis(now);
 
         insertFinancialReport(corp.id(), reporter.getUniqueId(), revenue, expenses);
         updateCorporation(corp);
 
         return CorpResult.ok(String.format(Locale.US,
-                "Reported %s revenue / %s expenses (%s%s profit). New share price: %s.",
+                "Reported %s revenue / %s expenses (%s%s claimed profit). Treasury adjusted by %s (capped at %.0f%% of market cap). New share price: %s.",
                 economy.format(revenue), economy.format(expenses),
-                profit >= 0 ? "+" : "", economy.format(profit), economy.format(corp.sharePrice())), corp);
+                profit >= 0 ? "+" : "", economy.format(profit),
+                economy.format(marketCap * clampedImpact), config.corpMaxReportImpactPercent(),
+                economy.format(corp.sharePrice())), corp);
     }
 
     public CorpResult setTrust(OfflinePlayer founder, Corporation corp, boolean enabled) {
