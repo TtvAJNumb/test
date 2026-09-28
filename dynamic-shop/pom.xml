@@ -22,7 +22,7 @@
     </dependencies>
 
     <build>
-        <finalName>DynamicShop-1.0.1</finalName>
+        <finalName>DynamicShop-1.0.2</finalName>
         <resources>
             <resource>
                 <directory>src/main/resources</directory>
