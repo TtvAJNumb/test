@@ -6,6 +6,9 @@ import com.donututils.realworld.careers.config.CareersConfig;
 import com.donututils.realworld.careers.config.JobDefinition;
 import com.donututils.realworld.careers.model.CitizenProfile;
 import com.donututils.realworld.careers.onboarding.OnboardingGuiService;
+import com.donututils.realworld.ledger.economy.LedgerEconomyProvider;
+import com.donututils.realworld.ledger.shards.ShardManager;
+import com.donututils.realworld.stockmarket.service.PortfolioService;
 import org.bukkit.ChatColor;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
@@ -19,17 +22,24 @@ public final class CareerCommand implements CommandExecutor {
     private final RealWorldPlugin plugin;
     private final CitizenManager citizenManager;
     private final OnboardingGuiService guiService;
+    private final LedgerEconomyProvider economy;
+    private final PortfolioService stockPortfolioService;
+    private final ShardManager shardManager;
 
-    public CareerCommand(RealWorldPlugin plugin, CitizenManager citizenManager, OnboardingGuiService guiService) {
+    public CareerCommand(RealWorldPlugin plugin, CitizenManager citizenManager, OnboardingGuiService guiService,
+                          LedgerEconomyProvider economy, PortfolioService stockPortfolioService, ShardManager shardManager) {
         this.plugin = plugin;
         this.citizenManager = citizenManager;
         this.guiService = guiService;
+        this.economy = economy;
+        this.stockPortfolioService = stockPortfolioService;
+        this.shardManager = shardManager;
     }
 
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
         if (args.length == 0) {
-            sender.sendMessage(color("&cUsage: /career [info|list|choose <job>|reopen|reload]"));
+            sender.sendMessage(color("&cUsage: /career [info|list|choose <job>|reopen|legacy|reload]"));
             return true;
         }
 
@@ -38,6 +48,7 @@ public final class CareerCommand implements CommandExecutor {
             case "list" -> list(sender);
             case "choose" -> choose(sender, args);
             case "reopen" -> reopen(sender);
+            case "legacy" -> legacy(sender, args);
             case "reload" -> reload(sender);
             default -> sender.sendMessage(color("&cUnknown /career subcommand."));
         }
@@ -61,12 +72,66 @@ public final class CareerCommand implements CommandExecutor {
             String name = job != null ? job.displayName() : profile.jobId();
             sender.sendMessage(color("&7Job: " + name));
             if (job != null) {
+                double multiplier = citizenManager.wageBonusMultiplier(profile, plugin.getCareersConfig());
                 sender.sendMessage(color(String.format(Locale.US, "&7Wage: &f$%,.2f &7every %d min",
-                        job.wageAmount(), job.wageIntervalMinutes())));
+                        job.wageAmount() * multiplier, job.wageIntervalMinutes())));
             }
         } else {
             sender.sendMessage(color("&7Job: &cnone - use /career reopen to pick one"));
         }
+        if (profile.legacyCount() > 0) {
+            sender.sendMessage(color("&7Legacies: &d" + profile.legacyCount()
+                    + " &7(a permanent +" + String.format(Locale.US, "%.0f", plugin.getCareersConfig().legacyWageBonusPercentPerLegacy() * profile.legacyCount())
+                    + "% wage bonus)"));
+        }
+        if (profile.ageTier() == com.donututils.realworld.careers.config.AgeTier.MINOR) {
+            int threshold = plugin.getCareersConfig().minorToAdultPlaytimeMinutes();
+            sender.sendMessage(color("&7Playtime: &f" + profile.playtimeMinutes() + "&7/&f" + threshold
+                    + " &7min until Adulthood"));
+        }
+    }
+
+    private void legacy(CommandSender sender, String[] args) {
+        Player player = requirePlayer(sender);
+        if (player == null) {
+            return;
+        }
+        CitizenProfile profile = citizenManager.profileOf(player.getUniqueId());
+        if (profile.ageTier() != com.donututils.realworld.careers.config.AgeTier.ADULT) {
+            sender.sendMessage(color("&cOnly Adults can reset their life as a legacy."));
+            return;
+        }
+        double money = economy.getBalance(player);
+        double stockValue = stockPortfolioService.getPortfolio(player.getUniqueId()).holdingsValue();
+        double totalWealth = money + stockValue;
+        double percent = plugin.getCareersConfig().legacyInheritancePercent();
+        double projectedInheritance = totalWealth * (percent / 100.0);
+
+        if (args.length < 2 || !args[1].equalsIgnoreCase("confirm")) {
+            sender.sendMessage(color("&e&lLegacy Reset"));
+            sender.sendMessage(color("&7This resets your age tier back to Minor and clears your job."));
+            sender.sendMessage(color("&7Your Money ($" + String.format(Locale.US, "%,.2f", money)
+                    + ") and stock portfolio value ($" + String.format(Locale.US, "%,.2f", stockValue)
+                    + ") are wiped, but you keep " + String.format(Locale.US, "%.0f", percent)
+                    + "% of that total as an inheritance: &a$" + String.format(Locale.US, "%,.2f", projectedInheritance)));
+            sender.sendMessage(color("&7Your stock shares themselves are NOT sold or touched."));
+            sender.sendMessage(color("&7You also permanently gain a small wage bonus on every future life, and some Shards."));
+            sender.sendMessage(color("&cThis cannot be undone. &7Type &f/career legacy confirm &7to proceed."));
+            return;
+        }
+
+        CitizenManager.LegacyResult result = citizenManager.performLegacyReset(player.getUniqueId(), totalWealth);
+        if (result == null) {
+            sender.sendMessage(color("&cOnly Adults can reset their life as a legacy."));
+            return;
+        }
+        economy.withdrawPlayer(player, money);
+        economy.depositPlayer(player, result.inheritanceMoney());
+        shardManager.credit(player.getUniqueId(), result.shardBonus());
+
+        player.sendMessage(color("&6&lYour life resets as a legacy. &7Inheritance: &a$"
+                + String.format(Locale.US, "%,.2f", result.inheritanceMoney()) + " &7+ &d" + result.shardBonus()
+                + " Shards&7. Legacy count: &d" + result.newLegacyCount()));
     }
 
     private void list(CommandSender sender) {

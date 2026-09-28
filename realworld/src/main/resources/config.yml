@@ -134,72 +134,89 @@ stockmarket:
   big-mover-alert-threshold-percent: 5.0
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# DYNAMICSHOP - config-driven item shop with supply/demand pricing, multi-currency
-# (Ledger money + PlayerPoints shards), auto-sell, loans, and economy stats.
+# MARKET - the dual-currency (Money/Shards) categorized shop. Money is the primary
+# currency (jobs, wages, task payouts, trade); Shards are a premium/milestone currency
+# earned from prestige/legacy resets, rare events, or webstore redemptions, spent on
+# cosmetic skins and black-market goods in the Shard Boutique below. The main vanilla
+# item catalog (every obtainable block/item, sorted into Overworld/Nether/End and their
+# sub-categories) is generated automatically from the server's Material list at startup
+# using the rarity tiers below - it is not hand-typed here, since that would be
+# thousands of near-duplicate lines. Firearms/Motors/Permits categories in the GUI are
+# storefronts in front of Arsenal/Motors/Municipal's own item factories and permit
+# system, priced in Money from those subsystems' own configs above.
 # ═══════════════════════════════════════════════════════════════════════════════
-dynamicshop:
-  # How often (seconds) item prices update based on recent buy/sell pressure.
-  tick-interval-seconds: 30
-
-  # Autosave interval (seconds) for item prices, player data, and loans.
-  autosave-interval-seconds: 300
-
-  currencies:
-    money:
-      enabled: true
-      # Bridges to Ledger (or whatever other economy is registered with Vault).
-      display-name: "Money"
-    shards:
-      enabled: true
-      # Bridges to the PlayerPoints plugin. Set enabled: false if you don't use a second currency,
-      # or don't have PlayerPoints installed.
-      display-name: "Shards"
-
+market:
   gui:
-    title: "&8Server Shop"
+    title: "&8Server Market"
 
-  # Turn any feature fully off here without uninstalling the plugin.
-  features:
-    auto-sell: true
-    loans: true
-    web-server: false
-    gdp-stats: true
-    tutorial: true
-    # If true, players can only buy a material after they've sold/collected it at least once before.
-    purchase-restriction: false
+  # Every generated catalog item's BASE buy price is base-money-value-per-rarity-tier times
+  # this category's multiplier - "base" because real-time supply/demand pricing (see
+  # dynamic-pricing below) then moves it up or down from there as people actually trade.
+  # Tune a whole dimension/category's starting point up or down without re-editing hundreds
+  # of items. Sell price is always current buy price times sell-back-fraction below.
+  category-multipliers:
+    wood-and-forestry: 1.0
+    agriculture-and-crops: 1.0
+    ores-and-stone: 1.0
+    mob-drops: 1.2
+    nether: 1.8
+    end: 3.0
 
-  exploit-protection:
-    # Minimum seconds between transactions per player, per item.
-    transaction-cooldown-seconds: 1
-    # Hard cap on quantity per single transaction, on top of each item's own max-buy/max-sell.
-    global-max-quantity-per-transaction: 6400
+  # Fraction of (current, dynamic) buy price a player gets back selling to the market.
+  sell-back-fraction: 0.4
 
-  loans:
-    max-loan-amount: 10000.0
-    interest-rate-percent-per-day: 5.0
-    max-outstanding-loans-per-player: 1
+  # Minimum seconds between transactions per player, per item (script/macro sanity check).
+  transaction-cooldown-seconds: 1
 
-  web-server:
-    # Bound to localhost by default - put your own reverse proxy/firewall in front if you expose it.
-    bind-address: "127.0.0.1"
-    port: 8082
-    # Optional: required as an X-Api-Key header if set.
-    api-key: ""
+  # Hard cap on quantity per single buy/sell transaction.
+  max-quantity-per-transaction: 6400
 
-  gdp:
-    # "GDP" here means total buy+sell transaction volume in this trailing window - computed live
-    # from the transaction log (no separate snapshot storage needed).
-    window-hours: 24
+  # Prices are dynamic, not static - every material has its own live price factor (starting
+  # at 1.0x its base price) that this drives up when players buy it and down when they sell
+  # it, exactly like the old DynamicShop's supply/demand engine. Persisted per-material to
+  # market-prices.yml so it survives restarts.
+  dynamic-pricing:
+    # How often (seconds) prices drift back toward their base value (see decay below).
+    tick-interval-seconds: 60
+    # Percent the price factor rises per unit bought.
+    buy-impact-percent: 0.05
+    # Percent the price factor falls per unit sold.
+    sell-impact-percent: 0.05
+    # Percent of the gap back to 1.0x (base price) closed on every tick - keeps a temporary
+    # buying/selling spike from permanently distorting a price forever.
+    decay-percent-per-tick: 2.0
+    # Hard floor/ceiling on the price factor, regardless of trading pressure.
+    min-price-factor: 0.25
+    max-price-factor: 4.0
 
-  tutorial:
-    # Sent as separate chat lines, in order, the first time a player opens the shop.
-    lines:
-      - "&6&lWelcome to the Server Shop!"
-      - "&7Use &f/shop &7to open the shop GUI."
-      - "&7Click the tabs at the top to filter by currency (Money, Shards, or All)."
-      - "&7Click an item to buy; shift-click to sell."
-      - "&7Use &f/shop sell hand &7to quickly sell what you're holding."
-      - "&7Use &f/shop autosell <item> &7to toggle automatically selling an item when you mine it."
+  # Shard Boutique - exclusive weapon skins, cosmetics, and black-market goods. Priced in
+  # Shards, not Money. A "skin" entry re-skins an existing Arsenal weapon by giving the
+  # buyer the same weapon under a different custom-model-data (server needs a matching
+  # resource-pack model for that id - see the delivered resource-pack pipeline doc).
+  shard-boutique:
+    ak47_gold_skin:
+      display-name: "&6&lGolden AK-47 Skin"
+      description: "A gold-plated AK-47. Same stats, different look."
+      base-weapon: ak47
+      custom-model-data: 100002
+      price-shards: 250
+    deagle_black_skin:
+      display-name: "&0&lMidnight Deagle Skin"
+      description: "A matte-black Desert Eagle skin."
+      base-weapon: deagle
+      custom-model-data: 100042
+      price-shards: 150
+    sedan_neon_skin:
+      display-name: "&d&lNeon Sedan Skin"
+      description: "A neon-trimmed sedan body."
+      base-vehicle: sedan
+      custom-model-data: 42103
+      price-shards: 300
+    black_market_totem:
+      display-name: "&5&lBlack-Market Totem of Undying"
+      description: "Rare - sold only for Shards, never for Money."
+      material: TOTEM_OF_UNDYING
+      price-shards: 500
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # MUNICIPAL - law enforcement, courts, jail, land claims/property tax, and
@@ -258,7 +275,9 @@ municipal:
     foreclosure-after-missed-ticks: 14
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# ARSENAL - custom raycast-based firearms.
+# ARSENAL - custom raycast-based firearms. Each weapon/ammo entry below can add its own
+# "price-money: <amount>" (default 500 for a weapon, 25 for a magazine of ammo) to set
+# what the Market's Firearms & Ammunition category charges for it.
 # ═══════════════════════════════════════════════════════════════════════════════
 arsenal:
   weapons:
@@ -304,8 +323,125 @@ arsenal:
         material: IRON_NUGGET
         display-name: "&7Pistol Magazine"
 
+    # Sustained-fire support weapon: biggest magazine, slowest reload, highest sustained
+    # spread growth (represents recoil climb on full-auto).
+    lmg:
+      material: CROSSBOW
+      custom-model-data: 100020
+      display-name: "&2Machine Gun"
+      damage:
+        base: 3.5
+        headshot-multiplier: 2.0
+        limb-multiplier: 0.75
+      magazine-size: 100
+      reload-seconds: 4.5
+      fire-cooldown-ms: 100
+      max-range: 55.0
+      spread:
+        base-degrees: 1.5
+        max-degrees: 9.0
+        growth-per-shot-degrees: 0.4
+        decay-per-second-degrees: 3.0
+      ammo:
+        material: IRON_NUGGET
+        display-name: "&7Machine Gun Belt"
+
+    # Close-quarters weapon: fastest fire rate and quickest reload, lowest per-hit damage
+    # and shortest range.
+    smg:
+      material: CROSSBOW
+      custom-model-data: 100030
+      display-name: "&bSMG"
+      damage:
+        base: 2.5
+        headshot-multiplier: 2.0
+        limb-multiplier: 0.7
+      magazine-size: 25
+      reload-seconds: 1.2
+      fire-cooldown-ms: 80
+      max-range: 25.0
+      spread:
+        base-degrees: 1.2
+        max-degrees: 7.0
+        growth-per-shot-degrees: 0.6
+        decay-per-second-degrees: 6.0
+      ammo:
+        material: IRON_NUGGET
+        display-name: "&7SMG Magazine"
+
+    # Heavy sidearm: tiny magazine, huge per-shot damage, immense headshot multiplier.
+    deagle:
+      material: CROSSBOW
+      custom-model-data: 100040
+      display-name: "&fDesert Eagle"
+      damage:
+        base: 7.0
+        headshot-multiplier: 4.0
+        limb-multiplier: 0.6
+      magazine-size: 7
+      reload-seconds: 2.0
+      fire-cooldown-ms: 450
+      max-range: 45.0
+      spread:
+        base-degrees: 0.4
+        max-degrees: 2.0
+        growth-per-shot-degrees: 0.8
+        decay-per-second-degrees: 5.0
+      ammo:
+        material: IRON_NUGGET
+        display-name: "&7Desert Eagle Magazine"
+
+    # Long-range precision rifle: one-shot magazine (bolt-action), by far the longest
+    # range and highest single-hit damage in the catalog, tightest base spread.
+    heavy_sniper:
+      material: CROSSBOW
+      custom-model-data: 100050
+      display-name: "&fHeavy Sniper"
+      damage:
+        base: 20.0
+        headshot-multiplier: 3.0
+        limb-multiplier: 0.9
+      magazine-size: 1
+      reload-seconds: 3.0
+      fire-cooldown-ms: 1200
+      max-range: 120.0
+      spread:
+        base-degrees: 0.1
+        max-degrees: 0.5
+        growth-per-shot-degrees: 0.2
+        decay-per-second-degrees: 8.0
+      ammo:
+        material: IRON_NUGGET
+        display-name: "&7Sniper Rounds"
+
+    # Heavy ordnance: not a raycast weapon like the others - see the Arsenal RPG note
+    # below config for how launcher/explosive weapons differ from the hitscan catalog.
+    rpg:
+      material: CROSSBOW
+      custom-model-data: 100060
+      display-name: "&4RPG"
+      damage:
+        base: 40.0
+        headshot-multiplier: 1.0
+        limb-multiplier: 1.0
+      magazine-size: 1
+      reload-seconds: 5.0
+      fire-cooldown-ms: 2000
+      max-range: 60.0
+      spread:
+        base-degrees: 0.5
+        max-degrees: 0.5
+        growth-per-shot-degrees: 0.0
+        decay-per-second-degrees: 0.0
+      splash-radius: 4.0
+      ammo:
+        material: IRON_NUGGET
+        display-name: "&7Rocket"
+
 # ═══════════════════════════════════════════════════════════════════════════════
-# MOTORS - custom vehicles built on vanilla boat/minecart riding physics.
+# MOTORS - custom vehicles built on vanilla boat/minecart riding physics. Each vehicle can
+# add its own "price-money: <amount>" (default 2000) for what the Market's Motors &
+# Vehicles category charges for a spawner.
 # ═══════════════════════════════════════════════════════════════════════════════
 motors:
   vehicles:
@@ -347,6 +483,13 @@ careers:
   onboarding:
     # Shown the first time a player joins with no age tier chosen yet - opens the age-tier GUI.
     welcome-message: "&6&lWelcome! &7Pick an age tier, then a job, to start earning a wage."
+
+  # School system: every player starts as a Minor (restricted to Tier 1 jobs). Once their tracked
+  # playtime on this server reaches this many minutes, they automatically "graduate" to Adult -
+  # no admin command needed - and are notified + get first pick of every Tier 2-4 job. Playtime
+  # only counts while online (it's a session-tick counter, not calendar time).
+  school:
+    minor-to-adult-playtime-minutes: 600
 
   jobs:
     # ── Tier 1: entry-level, available to Minors ────────────────────────────────
@@ -486,41 +629,14 @@ careers:
       wage-amount: 180.0
       wage-interval-minutes: 30
 
-# ═══════════════════════════════════════════════════════════════════════════════
-# AICHAT - in-game AI chat assistant, powered by Anthropic Claude/Gemini/Ollama.
-# ═══════════════════════════════════════════════════════════════════════════════
-aichat:
-  # Options: "anthropic", "gemini", "ollama" - see the original ai-chat module's config.yml comments
-  # (kept in git history) for the full provider writeup.
-  provider: "anthropic"
-
-  # Required for anthropic and gemini. Not needed for ollama unless you've put your own auth in front
-  # of it (sent as a Bearer token if set).
-  api-key: ""
-
-  # Only used when provider is "ollama": the base URL of your Ollama server.
-  ollama-base-url: "http://localhost:11434"
-
-  # The model name for whichever provider you picked above.
-  model: "claude-sonnet-5"
-
-  # The assistant's name, shown as a chat prefix (e.g. "Astra: Hey there!").
-  assistant-name: "Astra"
-
-  # The assistant's personality/instructions, sent as the system prompt on every request. It can call
-  # a few read-only tools to answer real questions about the stock market, the auction house, and
-  # server commands - it only ever sees what those tools return, never player balances or private data.
-  system-prompt: "You are Astra, a friendly and helpful AI assistant for this Minecraft server. Keep replies concise and conversational, suitable for in-game chat. When asked about stock prices, the auction house, or server commands, use the tools available to you rather than guessing - if a tool has no data, say so honestly instead of making something up. Never claim to know a player's balance, inventory, or private information, since you have no access to that."
-
-  # Max tokens the model is allowed to generate per reply.
-  max-tokens: 400
-
-  # How many back-and-forth exchanges to remember per player before the oldest is dropped. In-memory
-  # only, resets on restart.
-  memory-limit: 6
-
-  # Minimum seconds a player must wait between messages.
-  cooldown-seconds: 3
-
-  # Max characters allowed in a single player message.
-  max-message-length: 400
+  # ── Legacy Reset ──────────────────────────────────────────────────────────
+  # /career legacy (Adults only): resets age tier back to MINOR and clears the current job,
+  # but the player keeps legacy-inheritance-percent of their current Money (checking + savings)
+  # and stock portfolio value as a lump-sum "inheritance" paid into their checking account, plus
+  # legacy-shard-bonus Shards, and their permanent legacy-count goes up by one (shown in /career
+  # info; each legacy point also permanently raises every future wage by
+  # legacy-wage-bonus-percent-per-legacy, a small, real, ever-growing veteran-player perk).
+  legacy:
+    inheritance-percent: 10.0
+    shard-bonus-per-legacy: 50
+    wage-bonus-percent-per-legacy: 2.0

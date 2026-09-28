@@ -142,6 +142,12 @@ public final class DatabaseManager {
                     tax_type TEXT NOT NULL,
                     period INTEGER NOT NULL
                 );
+                """,
+                """
+                CREATE TABLE IF NOT EXISTS shard_balances (
+                    player_id TEXT PRIMARY KEY,
+                    balance INTEGER NOT NULL DEFAULT 0
+                );
                 """
         };
 

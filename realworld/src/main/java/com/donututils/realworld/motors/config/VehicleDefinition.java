@@ -19,7 +19,8 @@ public record VehicleDefinition(
         double maxWear,
         double wearPerBlock,
         double refuelCostPerUnit,
-        double repairCostPerWear
+        double repairCostPerWear,
+        double priceMoney
 ) {
     public enum Kind {
         BOAT,

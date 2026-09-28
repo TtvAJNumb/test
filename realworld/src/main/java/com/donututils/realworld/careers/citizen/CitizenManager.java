@@ -38,7 +38,7 @@ public final class CitizenManager {
     }
 
     private void loadAll() {
-        String sql = "SELECT player_id, age_tier, job_id, last_wage_at FROM citizens";
+        String sql = "SELECT player_id, age_tier, job_id, last_wage_at, playtime_minutes, legacy_count FROM citizens";
         try (Connection connection = database.getConnection();
              Statement statement = connection.createStatement();
              ResultSet rows = statement.executeQuery(sql)) {
@@ -46,7 +46,8 @@ public final class CitizenManager {
                 UUID playerId = UUID.fromString(rows.getString("player_id"));
                 String tierRaw = rows.getString("age_tier");
                 AgeTier tier = tierRaw == null ? null : AgeTier.valueOf(tierRaw);
-                CitizenProfile profile = new CitizenProfile(playerId, tier, rows.getString("job_id"), rows.getLong("last_wage_at"));
+                CitizenProfile profile = new CitizenProfile(playerId, tier, rows.getString("job_id"), rows.getLong("last_wage_at"),
+                        rows.getInt("playtime_minutes"), rows.getInt("legacy_count"));
                 profiles.put(playerId, profile);
             }
         } catch (SQLException | IllegalArgumentException ex) {
@@ -78,7 +79,8 @@ public final class CitizenManager {
     }
 
     /** Scheduled on an async repeating task. Pays every citizen with a chosen job whose wage
-     * interval has elapsed. */
+     * interval has elapsed, scaled up by their permanent legacy wage bonus (if any - see
+     * {@link #performLegacyReset}). */
     public void tickWages(VaultEconomyBridge economy) {
         CareersConfig config = configSupplier.get();
         long now = System.currentTimeMillis();
@@ -94,11 +96,62 @@ public final class CitizenManager {
             if (now - profile.lastWageAtMillis() < intervalMillis) {
                 continue;
             }
-            economy.deposit(profile.playerId(), job.wageAmount());
+            double wage = job.wageAmount() * wageBonusMultiplier(profile, config);
+            economy.deposit(profile.playerId(), wage);
             profile.setLastWageAtMillis(now);
             persistAsync(profile);
-            notifyIfOnline(profile.playerId(), "&aPaid " + formatMoney(job.wageAmount()) + " wage as a " + stripColor(job.displayName()) + ".");
+            notifyIfOnline(profile.playerId(), "&aPaid " + formatMoney(wage) + " wage as a " + stripColor(job.displayName()) + ".");
         }
+    }
+
+    /** Multiplier applied to every wage/task payout from a citizen's permanent legacy count - a
+     * small, ever-growing, real veteran-player perk (never resets, unlike everything else a legacy
+     * reset wipes). 1.0 for a player who has never gone through a legacy reset. */
+    public double wageBonusMultiplier(CitizenProfile profile, CareersConfig config) {
+        return 1.0 + (profile.legacyCount() * config.legacyWageBonusPercentPerLegacy() / 100.0);
+    }
+
+    /** Called once a minute (see the scheduled task in {@link com.donututils.realworld.RealWorldPlugin})
+     * for every online player: accrues tracked playtime and auto-graduates a Minor to Adult once the
+     * configured threshold is reached - no admin command needed, this is the "school system". */
+    public void tickPlaytime(java.util.Collection<Player> onlinePlayers) {
+        CareersConfig config = configSupplier.get();
+        for (Player player : onlinePlayers) {
+            CitizenProfile profile = profileOf(player.getUniqueId());
+            profile.setPlaytimeMinutes(profile.playtimeMinutes() + 1);
+            if (profile.ageTier() == AgeTier.MINOR && profile.playtimeMinutes() >= config.minorToAdultPlaytimeMinutes()) {
+                profile.setAgeTier(AgeTier.ADULT);
+                player.sendMessage(color("&6&lYou graduated! &7You're now an Adult - every job is open to you. Use &f/career reopen &7to pick one."));
+            }
+            persistAsync(profile);
+        }
+    }
+
+    /** Adults only. Resets age tier and job back to a fresh start, but keeps
+     * legacy-inheritance-percent of the player's current wealth (Money + stock portfolio value,
+     * passed in already computed since StockMarket lives in a different subsystem) as a lump-sum
+     * inheritance, plus a Shard bonus, and permanently bumps their legacy count (and therefore
+     * every future wage - see {@link #wageBonusMultiplier}). Returns null if the player isn't
+     * currently an Adult. */
+    public LegacyResult performLegacyReset(UUID playerId, double currentWealth) {
+        CitizenProfile profile = profileOf(playerId);
+        if (profile.ageTier() != AgeTier.ADULT) {
+            return null;
+        }
+        CareersConfig config = configSupplier.get();
+        double inheritance = currentWealth * (config.legacyInheritancePercent() / 100.0);
+        int newLegacyCount = profile.legacyCount() + 1;
+
+        profile.setAgeTier(AgeTier.MINOR);
+        profile.setJobId(null);
+        profile.setLegacyCount(newLegacyCount);
+        profile.setPlaytimeMinutes(0);
+        persistAsync(profile);
+
+        return new LegacyResult(inheritance, newLegacyCount, config.legacyShardBonusPerLegacy());
+    }
+
+    public record LegacyResult(double inheritanceMoney, int newLegacyCount, long shardBonus) {
     }
 
     /** Called by task-bonus listeners (block break, fishing, breeding) - pays a bonus if the
@@ -117,13 +170,16 @@ public final class CitizenManager {
 
     private void persistAsync(CitizenProfile profile) {
         Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
-            String sql = "INSERT INTO citizens (player_id, age_tier, job_id, last_wage_at) VALUES (?, ?, ?, ?) "
-                    + "ON CONFLICT(player_id) DO UPDATE SET age_tier = excluded.age_tier, job_id = excluded.job_id, last_wage_at = excluded.last_wage_at";
+            String sql = "INSERT INTO citizens (player_id, age_tier, job_id, last_wage_at, playtime_minutes, legacy_count) VALUES (?, ?, ?, ?, ?, ?) "
+                    + "ON CONFLICT(player_id) DO UPDATE SET age_tier = excluded.age_tier, job_id = excluded.job_id, "
+                    + "last_wage_at = excluded.last_wage_at, playtime_minutes = excluded.playtime_minutes, legacy_count = excluded.legacy_count";
             try (Connection connection = database.getConnection(); PreparedStatement statement = connection.prepareStatement(sql)) {
                 statement.setString(1, profile.playerId().toString());
                 statement.setString(2, profile.ageTier() == null ? null : profile.ageTier().name());
                 statement.setString(3, profile.jobId());
                 statement.setLong(4, profile.lastWageAtMillis());
+                statement.setInt(5, profile.playtimeMinutes());
+                statement.setInt(6, profile.legacyCount());
                 statement.executeUpdate();
             } catch (SQLException ex) {
                 plugin.getLogger().log(Level.WARNING, "Failed to persist citizen " + profile.playerId(), ex);

@@ -3,12 +3,10 @@ version: ${project.version}
 main: com.donututils.realworld.RealWorldPlugin
 api-version: "1.21"
 folia-supported: false
-description: The full life-simulation economy in one plugin - banking/credit/loans/corporations (Ledger), a stock market, a dynamic-pricing item shop, in-game AI chat, law enforcement/courts/jail/permits/land claims (Municipal), custom firearms (Arsenal), drivable vehicles (Motors), and age/job/wages (Careers). Ledger is built in and registers itself as the server's Vault economy provider - no other economy plugin required. Vault itself must still be installed.
+description: The full life-simulation economy in one plugin - banking/credit/loans/corporations (Ledger), a stock market, a dual-currency (Money/Shards) categorized item shop covering every obtainable vanilla item plus firearms/vehicles/permits, law enforcement/courts/jail/permits/land claims (Municipal), custom firearms (Arsenal), drivable vehicles (Motors), and playtime-gated age/job/wages/legacy resets (Careers). Ledger is built in and registers itself as the server's Vault economy provider - no other economy plugin required. Vault itself must still be installed. AIChat and DynamicShop are deprecated and are not part of this plugin.
 authors: [donututils]
 depend:
   - Vault
-softdepend:
-  - PlayerPoints
 commands:
   # --- Ledger (banking/credit/loans/corporations) ---
   bank:
@@ -57,23 +55,22 @@ commands:
     usage: /stockadmin <create|delist|split|halt|resume|event|material|reload|save> ...
     permission: stockmarket.admin
     permission-message: "&cYou do not have permission to manage the stock market."
-  # --- DynamicShop ---
+  # --- Market (dual-currency categorized shop) ---
   shop:
-    description: Open the item shop, or sell/autosell/loan/economy from chat.
-    usage: /shop [sell hand|sellall|autosell <item> <on|off>|loan <amount> <currency>|repay <amount>|tutorial|economy]
-    permission: dynamicshop.command.shop
+    description: Open the categorized item shop (Overworld/Nether/End/Firearms/Motors/Permits), or sell from chat.
+    usage: /shop [sell hand|sellall]
+    permission: market.command.shop
     permission-message: "&cYou do not have permission to use /shop."
   shopadmin:
-    description: Manage the shop's items and currencies.
-    usage: /shopadmin <additem|removeitem|setprice|setcurrency|setvolatility|setbuyable|setsellable|reload|save> ...
-    permission: dynamicshop.admin
+    description: Administer the shop and Shards currency.
+    usage: /shopadmin <reload|addshards <player> <amount>|setmultiplier <category> <value>> ...
+    permission: market.admin
     permission-message: "&cYou do not have permission to manage the shop."
-  # --- AIChat ---
-  ai:
-    description: Talk to the server's AI assistant.
-    usage: /ai <message> | /ai reset | /ai reload
-    permission: aichat.command.ai
-    permission-message: "&cYou do not have permission to use /ai."
+  shards:
+    description: Check your Shards balance, or another player's.
+    usage: /shards [player]
+    permission: market.command.shards
+    permission-message: "&cYou do not have permission to use /shards."
   # --- Municipal ---
   permit:
     description: Buy or check business/building/weapon permits.
@@ -114,8 +111,8 @@ commands:
     permission-message: "&cYou do not have permission to use /motors."
   # --- Careers ---
   career:
-    description: Check your age/job, list jobs, or reopen the choice menu.
-    usage: /career [info|list|choose <job>|reopen|reload]
+    description: Check your age/job, list jobs, reopen the choice menu, or reset your life as a legacy.
+    usage: /career [info|list|choose <job>|reopen|legacy|reload]
     permission: careers.command.career
     permission-message: "&cYou do not have permission to use /career."
 permissions:
@@ -146,17 +143,14 @@ permissions:
   stockmarket.admin:
     description: Allows managing stocks (create, delist, split, halt, events)
     default: op
-  dynamicshop.command.shop:
-    description: Allows using the item shop
+  market.command.shop:
+    description: Allows using the categorized item shop
     default: true
-  dynamicshop.admin:
-    description: Allows managing the shop's items and currencies
-    default: op
-  aichat.command.ai:
-    description: Allows chatting with the AI assistant
+  market.command.shards:
+    description: Allows checking Shards balances
     default: true
-  aichat.admin:
-    description: Allows reloading the AI assistant's configuration
+  market.admin:
+    description: Allows administering the shop and granting Shards
     default: op
   municipal.command.permit:
     description: Allows buying and checking permits

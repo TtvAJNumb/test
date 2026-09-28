@@ -12,6 +12,8 @@ import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -50,7 +52,7 @@ public final class OnboardingGuiService {
             openJobMenu(player);
         });
 
-        player.openInventory(inventory);
+        openInventorySafely(player, inventory);
     }
 
     public void openJobMenu(Player player) {
@@ -81,7 +83,26 @@ public final class OnboardingGuiService {
             slot++;
         }
 
-        player.openInventory(inventory);
+        openInventorySafely(player, inventory);
+    }
+
+    /** Bukkit/Paper's HumanEntity#openInventory has returned different types (void on some very old
+     * builds, InventoryView on modern ones) across API versions - compiling a direct call against the
+     * wrong one produces an AbstractMethodError at runtime that silently breaks every click, since the
+     * menu either never opens or the interface call site doesn't resolve. Called reflectively instead,
+     * the same defensive pattern already used by every other GUI subsystem in this plugin
+     * (see StockMarket's PagedMenu). This was the actual cause of "setting up age and choosing a
+     * career don't work" - the menus were failing to open at all on the real server. */
+    private static void openInventorySafely(Player player, Inventory inventory) {
+        try {
+            Method method = player.getClass().getMethod("openInventory", Inventory.class);
+            method.invoke(player, inventory);
+        } catch (NoSuchMethodException | IllegalAccessException ex) {
+            throw new IllegalStateException("Could not find a way to open an inventory on this server: " + ex, ex);
+        } catch (InvocationTargetException ex) {
+            Throwable cause = ex.getCause() != null ? ex.getCause() : ex;
+            throw new IllegalStateException("Opening the menu inventory failed: " + cause, cause);
+        }
     }
 
     private static ItemStack icon(Material material, String name, List<String> lore) {

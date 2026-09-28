@@ -1,14 +1,5 @@
 package com.donututils.realworld;
 
-import com.donututils.realworld.aichat.client.ChatClient;
-import com.donututils.realworld.aichat.client.ClaudeApiClient;
-import com.donututils.realworld.aichat.client.GeminiApiClient;
-import com.donututils.realworld.aichat.client.OllamaApiClient;
-import com.donututils.realworld.aichat.command.AICommand;
-import com.donututils.realworld.aichat.config.AIChatConfig;
-import com.donututils.realworld.aichat.memory.ConversationMemory;
-import com.donututils.realworld.aichat.tool.ServerContextService;
-
 import com.donututils.realworld.arsenal.command.ArsenalCommand;
 import com.donututils.realworld.arsenal.config.ArsenalConfig;
 import com.donututils.realworld.arsenal.config.WeaponDefinition;
@@ -27,27 +18,6 @@ import com.donututils.realworld.careers.job.TaskBonusListener;
 import com.donututils.realworld.careers.onboarding.OnboardingGuiService;
 import com.donututils.realworld.careers.onboarding.OnboardingListener;
 
-import com.donututils.realworld.dynamicshop.command.ShopAdminCommand;
-import com.donututils.realworld.dynamicshop.command.ShopCommand;
-import com.donututils.realworld.dynamicshop.config.DynamicShopConfig;
-import com.donututils.realworld.dynamicshop.config.Messages;
-import com.donututils.realworld.dynamicshop.currency.CurrencyRegistry;
-import com.donututils.realworld.dynamicshop.currency.PlayerPointsCurrencyBridge;
-import com.donututils.realworld.dynamicshop.currency.VaultCurrencyBridge;
-import com.donututils.realworld.dynamicshop.engine.PlayerDataRegistry;
-import com.donututils.realworld.dynamicshop.engine.PricingEngine;
-import com.donututils.realworld.dynamicshop.engine.ShopItemRegistry;
-import com.donututils.realworld.dynamicshop.gui.ShopMenuClickListener;
-import com.donututils.realworld.dynamicshop.http.DynamicShopHttpServer;
-import com.donututils.realworld.dynamicshop.listener.ItemCollectionListener;
-import com.donututils.realworld.dynamicshop.model.PlayerShopData;
-import com.donututils.realworld.dynamicshop.service.EconomyStatsService;
-import com.donututils.realworld.dynamicshop.service.LoanService;
-import com.donututils.realworld.dynamicshop.service.ShopGuiService;
-import com.donututils.realworld.dynamicshop.storage.LoanStore;
-import com.donututils.realworld.dynamicshop.storage.PlayerDataStore;
-import com.donututils.realworld.dynamicshop.storage.ShopItemStore;
-
 import com.donututils.realworld.ledger.bank.BankManager;
 import com.donututils.realworld.ledger.command.BankCommand;
 import com.donututils.realworld.ledger.command.CorpCommand;
@@ -59,8 +29,22 @@ import com.donututils.realworld.ledger.corp.CorporationManager;
 import com.donututils.realworld.ledger.credit.CreditScoreManager;
 import com.donututils.realworld.ledger.economy.LedgerEconomyProvider;
 import com.donututils.realworld.ledger.loan.LoanManager;
+import com.donututils.realworld.ledger.shards.ShardManager;
 import com.donututils.realworld.ledger.stock.ShareTradingManager;
 import com.donututils.realworld.ledger.tax.TaxManager;
+
+import com.donututils.realworld.market.command.ShardsCommand;
+import com.donututils.realworld.market.command.ShopAdminCommand;
+import com.donututils.realworld.market.command.ShopCommand;
+import com.donututils.realworld.market.config.BoutiqueItem;
+import com.donututils.realworld.market.config.CatalogEntry;
+import com.donututils.realworld.market.config.MarketConfig;
+import com.donututils.realworld.market.catalog.ItemCatalog;
+import com.donututils.realworld.market.gui.MarketGuiService;
+import com.donututils.realworld.market.gui.MarketMenuClickListener;
+import com.donututils.realworld.market.pricing.MarketPriceStore;
+import com.donututils.realworld.market.pricing.MarketPricingEngine;
+import com.donututils.realworld.market.service.MarketService;
 
 import com.donututils.realworld.municipal.claim.ClaimManager;
 import com.donututils.realworld.municipal.claim.ClaimProtectionListener;
@@ -157,6 +141,7 @@ public final class RealWorldPlugin extends JavaPlugin {
     private CorporationManager corporationManager;
     private ShareTradingManager shareTradingManager;
     private TaxManager taxManager;
+    private ShardManager shardManager;
     private volatile LedgerConfig ledgerConfig;
     private final List<BukkitTask> ledgerTasks = new ArrayList<>();
 
@@ -182,26 +167,6 @@ public final class RealWorldPlugin extends JavaPlugin {
     private BukkitTask stockSummaryBukkitTask;
     private BukkitTask stockAutosaveTask;
 
-    // ── DynamicShop ──────────────────────────────────────────────────────────
-    private static final int MAX_CURRENCY_RETRIES = 10;
-    private ShopItemRegistry shopItemRegistry;
-    private PlayerDataRegistry shopPlayerDataRegistry;
-    private CurrencyRegistry shopCurrencyRegistry;
-    private com.donututils.realworld.dynamicshop.storage.TransactionLogStore shopTransactionLog;
-    private LoanStore shopLoanStore;
-    private PricingEngine shopPricingEngine;
-    private com.donututils.realworld.dynamicshop.service.TradingService shopTradingService;
-    private ShopGuiService shopGuiService;
-    private LoanService shopLoanService;
-    private EconomyStatsService shopEconomyStatsService;
-    private DynamicShopHttpServer shopHttpServer;
-    private com.donututils.realworld.dynamicshop.listener.ChatQuantityPrompt shopQuantityPrompt;
-    private volatile DynamicShopConfig dynamicShopConfig;
-    private volatile Messages shopMessages;
-    private BukkitTask shopTickTask;
-    private BukkitTask shopAutosaveTask;
-    private int shopCurrencyRetryAttempts;
-
     // ── Municipal ────────────────────────────────────────────────────────────
     private com.donututils.realworld.municipal.db.DatabaseManager municipalDatabase;
     private com.donututils.realworld.municipal.economy.VaultEconomyBridge municipalEconomy;
@@ -223,9 +188,20 @@ public final class RealWorldPlugin extends JavaPlugin {
     // ── Motors ───────────────────────────────────────────────────────────────
     private com.donututils.realworld.motors.db.DatabaseManager motorsDatabase;
     private com.donututils.realworld.motors.economy.VaultEconomyBridge motorsEconomy;
+    private VehicleItemFactory motorsItemFactory;
     private VehicleManager motorsVehicleManager;
     private volatile MotorsConfig motorsConfig;
     private BukkitTask motorsTickTask;
+
+    // ── Market ───────────────────────────────────────────────────────────────
+    private java.util.List<CatalogEntry> marketCatalog;
+    private MarketPriceStore marketPriceStore;
+    private MarketPricingEngine marketPricingEngine;
+    private MarketService marketService;
+    private MarketGuiService marketGuiService;
+    private volatile MarketConfig marketConfig;
+    private BukkitTask marketPriceTickTask;
+    private BukkitTask marketAutosaveTask;
 
     // ── Careers ──────────────────────────────────────────────────────────────
     private com.donututils.realworld.careers.db.DatabaseManager careersDatabase;
@@ -233,24 +209,13 @@ public final class RealWorldPlugin extends JavaPlugin {
     private CitizenManager citizenManager;
     private volatile CareersConfig careersConfig;
     private BukkitTask careersWageTask;
-
-    // ── AIChat ───────────────────────────────────────────────────────────────
-    private ChatClient aiChatClient;
-    private ConversationMemory aiMemory;
-    private volatile ServerContextService aiServerContext;
-    private volatile AIChatConfig aiChatConfig;
+    private BukkitTask careersPlaytimeTask;
 
     @Override
     public void onEnable() {
         saveDefaultConfig();
         if (!new File(getDataFolder(), "stocks.yml").exists()) {
             saveResource("stocks.yml", false);
-        }
-        if (!new File(getDataFolder(), "shop-items.yml").exists()) {
-            saveResource("shop-items.yml", false);
-        }
-        if (!new File(getDataFolder(), "messages.yml").exists()) {
-            saveResource("messages.yml", false);
         }
 
         if (getServer().getPluginManager().getPlugin("Vault") == null) {
@@ -265,14 +230,13 @@ public final class RealWorldPlugin extends JavaPlugin {
             return;
         }
         setupStockMarket();
-        setupDynamicShop();
         setupMunicipal();
         setupArsenal();
         setupMotors();
+        setupMarket();
         setupCareers();
-        setupAIChat();
 
-        getLogger().info("RealWorld enabled - Ledger, StockMarket, DynamicShop, AIChat, Municipal, Arsenal, Motors, and Careers are all live.");
+        getLogger().info("RealWorld enabled - Ledger, StockMarket, Market, Municipal, Arsenal, Motors, and Careers are all live.");
     }
 
     @Override
@@ -294,21 +258,6 @@ public final class RealWorldPlugin extends JavaPlugin {
             stockRegistry.saveAll();
         }
 
-        cancel(shopTickTask);
-        cancel(shopAutosaveTask);
-        if (shopHttpServer != null) {
-            shopHttpServer.stop();
-        }
-        if (shopItemRegistry != null) {
-            shopItemRegistry.saveAll();
-        }
-        if (shopPlayerDataRegistry != null) {
-            shopPlayerDataRegistry.saveAll();
-        }
-        if (shopLoanService != null) {
-            shopLoanService.saveAll();
-        }
-
         cancel(municipalReleaseTask);
         cancel(municipalPropertyTaxTask);
         if (municipalDatabase != null) {
@@ -324,8 +273,15 @@ public final class RealWorldPlugin extends JavaPlugin {
         }
 
         cancel(careersWageTask);
+        cancel(careersPlaytimeTask);
         if (careersDatabase != null) {
             careersDatabase.shutdown();
+        }
+
+        cancel(marketPriceTickTask);
+        cancel(marketAutosaveTask);
+        if (marketPricingEngine != null) {
+            marketPricingEngine.saveAll();
         }
     }
 
@@ -359,6 +315,7 @@ public final class RealWorldPlugin extends JavaPlugin {
         corporationManager = new CorporationManager(this, ledgerDatabase, economyProvider, this::getLedgerConfig);
         shareTradingManager = new ShareTradingManager(this, ledgerDatabase, economyProvider, corporationManager, this::getLedgerConfig);
         taxManager = new TaxManager(this, economyProvider, bankManager, corporationManager, this::getLedgerConfig);
+        shardManager = new ShardManager(this, ledgerDatabase);
 
         getServer().getServicesManager().register(Economy.class, economyProvider, this, ServicePriority.Highest);
         getServer().getPluginManager().registerEvents(new LedgerJoinListener(), this);
@@ -399,6 +356,10 @@ public final class RealWorldPlugin extends JavaPlugin {
 
     public LedgerEconomyProvider getEconomyProvider() {
         return economyProvider;
+    }
+
+    public ShardManager getShardManager() {
+        return shardManager;
     }
 
     private void startLedgerTasks() {
@@ -571,229 +532,6 @@ public final class RealWorldPlugin extends JavaPlugin {
     }
 
     // ═══════════════════════════════════════════════════════════════════════
-    // DYNAMICSHOP
-    // ═══════════════════════════════════════════════════════════════════════
-
-    private void setupDynamicShop() {
-        dynamicShopConfig = loadDynamicShopConfig();
-        shopMessages = loadShopMessages();
-        resolveShopCurrenciesAndFinishEnable();
-    }
-
-    private void resolveShopCurrenciesAndFinishEnable() {
-        shopCurrencyRegistry = new CurrencyRegistry();
-        boolean stillWaiting = false;
-
-        if (dynamicShopConfig.moneyEnabled()) {
-            try {
-                VaultCurrencyBridge money = VaultCurrencyBridge.create();
-                if (money != null) {
-                    shopCurrencyRegistry.register(money);
-                } else {
-                    stillWaiting = true;
-                }
-            } catch (ReflectiveOperationException | RuntimeException ex) {
-                getLogger().warning("Money currency enabled but Vault's economy API didn't look as expected: " + ex);
-            }
-        }
-        if (dynamicShopConfig.shardsEnabled()) {
-            try {
-                PlayerPointsCurrencyBridge shards = PlayerPointsCurrencyBridge.create(dynamicShopConfig.shardsDisplayName());
-                if (shards != null) {
-                    shopCurrencyRegistry.register(shards);
-                } else {
-                    stillWaiting = true;
-                }
-            } catch (ReflectiveOperationException | RuntimeException ex) {
-                getLogger().warning("Shards currency enabled but PlayerPoints' API didn't look as expected: " + ex);
-            }
-        }
-
-        if (stillWaiting && shopCurrencyRegistry.isEmpty() && shopCurrencyRetryAttempts < MAX_CURRENCY_RETRIES) {
-            shopCurrencyRetryAttempts++;
-            getServer().getScheduler().runTaskLater(this, this::resolveShopCurrenciesAndFinishEnable, 20L);
-            return;
-        }
-
-        if (shopCurrencyRegistry.isEmpty()) {
-            getLogger().warning("DynamicShop has no currency providers available (checked Vault/PlayerPoints) - "
-                    + "buying and selling will fail until one becomes available. Use /shopadmin reload once it is.");
-        }
-
-        finishDynamicShopEnable();
-    }
-
-    private void finishDynamicShopEnable() {
-        shopItemRegistry = new ShopItemRegistry(new ShopItemStore(getDataFolder(), getLogger()));
-        shopPlayerDataRegistry = new PlayerDataRegistry(new PlayerDataStore(getDataFolder(), getLogger()));
-        shopTransactionLog = new com.donututils.realworld.dynamicshop.storage.TransactionLogStore(getDataFolder(), getLogger());
-        shopLoanStore = new LoanStore(getDataFolder(), getLogger());
-        shopQuantityPrompt = new com.donututils.realworld.dynamicshop.listener.ChatQuantityPrompt(this);
-
-        shopPricingEngine = new PricingEngine(shopItemRegistry);
-        shopTradingService = new com.donututils.realworld.dynamicshop.service.TradingService(shopItemRegistry, shopCurrencyRegistry, shopPlayerDataRegistry, shopTransactionLog,
-                this::getDynamicShopConfig, this::getMessages);
-        shopGuiService = new ShopGuiService(shopItemRegistry, shopCurrencyRegistry, shopTradingService, shopQuantityPrompt, this::getDynamicShopConfig);
-        shopLoanService = new LoanService(shopLoanStore, shopCurrencyRegistry, this::getDynamicShopConfig);
-        shopEconomyStatsService = new EconomyStatsService(shopTransactionLog, shopItemRegistry, shopLoanService, this::getDynamicShopConfig);
-        shopHttpServer = new DynamicShopHttpServer(this, this::getDynamicShopConfig, shopItemRegistry, shopEconomyStatsService);
-
-        getServer().getPluginManager().registerEvents(new ShopMenuClickListener(this::formatShopPrice), this);
-        getServer().getPluginManager().registerEvents(shopQuantityPrompt, this);
-        getServer().getPluginManager().registerEvents(
-                new ItemCollectionListener(shopItemRegistry, shopPlayerDataRegistry, shopTradingService, this::getDynamicShopConfig), this);
-
-        registerCommand("shop", new ShopCommand(this));
-        registerCommand("shopadmin", new ShopAdminCommand(this));
-
-        startDynamicShopTasks();
-        shopHttpServer.start();
-    }
-
-    public void reloadDynamicShop() {
-        reloadConfig();
-        dynamicShopConfig = loadDynamicShopConfig();
-        shopMessages = loadShopMessages();
-        stopDynamicShopTasks();
-        if (shopHttpServer != null) {
-            shopHttpServer.stop();
-        }
-        shopCurrencyRetryAttempts = 0;
-        resolveShopCurrenciesAndFinishEnableForReload();
-    }
-
-    private void resolveShopCurrenciesAndFinishEnableForReload() {
-        shopCurrencyRegistry = new CurrencyRegistry();
-        if (dynamicShopConfig.moneyEnabled()) {
-            try {
-                VaultCurrencyBridge money = VaultCurrencyBridge.create();
-                if (money != null) {
-                    shopCurrencyRegistry.register(money);
-                }
-            } catch (ReflectiveOperationException | RuntimeException ex) {
-                getLogger().warning("Money currency enabled but Vault's economy API didn't look as expected: " + ex);
-            }
-        }
-        if (dynamicShopConfig.shardsEnabled()) {
-            try {
-                PlayerPointsCurrencyBridge shards = PlayerPointsCurrencyBridge.create(dynamicShopConfig.shardsDisplayName());
-                if (shards != null) {
-                    shopCurrencyRegistry.register(shards);
-                }
-            } catch (ReflectiveOperationException | RuntimeException ex) {
-                getLogger().warning("Shards currency enabled but PlayerPoints' API didn't look as expected: " + ex);
-            }
-        }
-        shopTradingService = new com.donututils.realworld.dynamicshop.service.TradingService(shopItemRegistry, shopCurrencyRegistry, shopPlayerDataRegistry, shopTransactionLog,
-                this::getDynamicShopConfig, this::getMessages);
-        shopGuiService = new ShopGuiService(shopItemRegistry, shopCurrencyRegistry, shopTradingService, shopQuantityPrompt, this::getDynamicShopConfig);
-        shopLoanService = new LoanService(shopLoanStore, shopCurrencyRegistry, this::getDynamicShopConfig);
-        shopEconomyStatsService = new EconomyStatsService(shopTransactionLog, shopItemRegistry, shopLoanService, this::getDynamicShopConfig);
-        shopHttpServer = new DynamicShopHttpServer(this, this::getDynamicShopConfig, shopItemRegistry, shopEconomyStatsService);
-        startDynamicShopTasks();
-        shopHttpServer.start();
-    }
-
-    public void sendTutorial(Player player) {
-        for (String line : dynamicShopConfig.tutorialLines()) {
-            player.sendMessage(com.donututils.realworld.dynamicshop.gui.ShopPagedMenu.legacy(line));
-        }
-    }
-
-    public DynamicShopConfig getDynamicShopConfig() {
-        return dynamicShopConfig;
-    }
-
-    public Messages getMessages() {
-        return shopMessages;
-    }
-
-    public ShopItemRegistry getItemRegistry() {
-        return shopItemRegistry;
-    }
-
-    public PlayerDataRegistry getPlayerDataRegistry() {
-        return shopPlayerDataRegistry;
-    }
-
-    public CurrencyRegistry getCurrencyRegistry() {
-        return shopCurrencyRegistry;
-    }
-
-    public com.donututils.realworld.dynamicshop.service.TradingService getTradingService() {
-        return shopTradingService;
-    }
-
-    public ShopGuiService getGuiService() {
-        return shopGuiService;
-    }
-
-    public LoanService getLoanService() {
-        return shopLoanService;
-    }
-
-    public EconomyStatsService getEconomyStatsService() {
-        return shopEconomyStatsService;
-    }
-
-    private String formatShopPrice(String currencyId, double amount) {
-        var provider = shopCurrencyRegistry.get(currencyId);
-        return provider == null ? (amount + " " + currencyId) : provider.format(amount);
-    }
-
-    private void startDynamicShopTasks() {
-        long tickTicks = Math.max(20L, dynamicShopConfig.tickIntervalSeconds() * 20L);
-        long autosaveTicks = Math.max(20L, dynamicShopConfig.autosaveIntervalSeconds() * 20L);
-        shopTickTask = getServer().getScheduler().runTaskTimer(this, shopPricingEngine::tick, tickTicks, tickTicks);
-        shopAutosaveTask = getServer().getScheduler().runTaskTimer(this, () -> {
-            shopItemRegistry.saveAll();
-            shopPlayerDataRegistry.saveAll();
-            shopLoanService.saveAll();
-        }, autosaveTicks, autosaveTicks);
-    }
-
-    private void stopDynamicShopTasks() {
-        cancel(shopTickTask);
-        cancel(shopAutosaveTask);
-        shopTickTask = null;
-        shopAutosaveTask = null;
-    }
-
-    private DynamicShopConfig loadDynamicShopConfig() {
-        FileConfiguration cfg = getConfig();
-        return new DynamicShopConfig(
-                cfg.getInt("dynamicshop.tick-interval-seconds", 30),
-                cfg.getInt("dynamicshop.autosave-interval-seconds", 300),
-                cfg.getBoolean("dynamicshop.currencies.money.enabled", true),
-                cfg.getString("dynamicshop.currencies.money.display-name", "Money"),
-                cfg.getBoolean("dynamicshop.currencies.shards.enabled", true),
-                cfg.getString("dynamicshop.currencies.shards.display-name", "Shards"),
-                cfg.getString("dynamicshop.gui.title", "&8Server Shop"),
-                cfg.getBoolean("dynamicshop.features.auto-sell", true),
-                cfg.getBoolean("dynamicshop.features.loans", true),
-                cfg.getBoolean("dynamicshop.features.web-server", false),
-                cfg.getBoolean("dynamicshop.features.gdp-stats", true),
-                cfg.getBoolean("dynamicshop.features.tutorial", true),
-                cfg.getBoolean("dynamicshop.features.purchase-restriction", false),
-                cfg.getInt("dynamicshop.exploit-protection.transaction-cooldown-seconds", 1),
-                cfg.getInt("dynamicshop.exploit-protection.global-max-quantity-per-transaction", 6400),
-                cfg.getDouble("dynamicshop.loans.max-loan-amount", 10000.0),
-                cfg.getDouble("dynamicshop.loans.interest-rate-percent-per-day", 5.0),
-                cfg.getInt("dynamicshop.loans.max-outstanding-loans-per-player", 1),
-                cfg.getString("dynamicshop.web-server.bind-address", "127.0.0.1"),
-                cfg.getInt("dynamicshop.web-server.port", 8082),
-                cfg.getString("dynamicshop.web-server.api-key", ""),
-                cfg.getInt("dynamicshop.gdp.window-hours", 24),
-                cfg.getStringList("dynamicshop.tutorial.lines")
-        );
-    }
-
-    private Messages loadShopMessages() {
-        YamlConfiguration yaml = YamlConfiguration.loadConfiguration(new File(getDataFolder(), "messages.yml"));
-        return new Messages(yaml);
-    }
-
-    // ═══════════════════════════════════════════════════════════════════════
     // MUNICIPAL
     // ═══════════════════════════════════════════════════════════════════════
 
@@ -955,7 +693,10 @@ public final class RealWorldPlugin extends JavaPlugin {
                             s.getDouble("spread.growth-per-shot-degrees", 0.5),
                             s.getDouble("spread.decay-per-second-degrees", 4.0),
                             ammoMaterial,
-                            s.getString("ammo.display-name", id + " Magazine")
+                            s.getString("ammo.display-name", id + " Magazine"),
+                            s.getDouble("splash-radius", 0.0),
+                            s.getDouble("price-money", 500.0),
+                            s.getDouble("ammo.price-money", 25.0)
                     );
                     weapons.put(id.toLowerCase(Locale.ROOT), definition);
                 } catch (IllegalArgumentException ex) {
@@ -989,13 +730,13 @@ public final class RealWorldPlugin extends JavaPlugin {
         motorsDatabase = new com.donututils.realworld.motors.db.DatabaseManager(getDataFolder(), getLogger());
 
         VehicleKeys keys = new VehicleKeys(this);
-        VehicleItemFactory itemFactory = new VehicleItemFactory(keys);
-        motorsVehicleManager = new VehicleManager(this, motorsDatabase, keys, itemFactory, this::getMotorsConfig);
+        motorsItemFactory = new VehicleItemFactory(keys);
+        motorsVehicleManager = new VehicleManager(this, motorsDatabase, keys, motorsItemFactory, this::getMotorsConfig);
         motorsVehicleManager.loadFromDatabase();
 
         getServer().getPluginManager().registerEvents(new PlaceListener(motorsVehicleManager, keys, this::getMotorsConfig), this);
 
-        registerCommand("motors", new MotorsCommand(this, motorsVehicleManager, itemFactory));
+        registerCommand("motors", new MotorsCommand(this, motorsVehicleManager, motorsItemFactory));
 
         motorsTickTask = getServer().getScheduler().runTaskTimer(this, motorsVehicleManager::tick, 20L, 20L);
     }
@@ -1044,7 +785,8 @@ public final class RealWorldPlugin extends JavaPlugin {
                             s.getDouble("max-wear", 100.0),
                             s.getDouble("wear-per-block", 0.02),
                             s.getDouble("refuel-cost-per-unit", 0.5),
-                            s.getDouble("repair-cost-per-wear", 4.0)
+                            s.getDouble("repair-cost-per-wear", 4.0),
+                            s.getDouble("price-money", 2000.0)
                     );
                     vehicles.put(id.toLowerCase(Locale.ROOT), definition);
                 } catch (IllegalArgumentException ex) {
@@ -1053,6 +795,103 @@ public final class RealWorldPlugin extends JavaPlugin {
             }
         }
         return new MotorsConfig(vehicles);
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // MARKET
+    // ═══════════════════════════════════════════════════════════════════════
+
+    private void setupMarket() {
+        marketConfig = loadMarketConfig();
+        marketCatalog = ItemCatalog.generate();
+        marketPriceStore = new MarketPriceStore(getDataFolder(), getLogger());
+        marketPricingEngine = new MarketPricingEngine(marketPriceStore, this::getMarketConfig);
+        marketService = new MarketService(marketCatalog, marketPricingEngine, economyProvider, shardManager,
+                this::getMarketConfig, this::getArsenalConfig, arsenalItemFactory, this::getMotorsConfig,
+                motorsItemFactory, permitManager);
+        marketGuiService = new MarketGuiService(marketCatalog, marketPricingEngine, marketService, this::getMarketConfig,
+                this::getArsenalConfig, this::getMotorsConfig, this::getMunicipalConfig);
+
+        getServer().getPluginManager().registerEvents(new MarketMenuClickListener(), this);
+
+        registerCommand("shop", new ShopCommand(marketGuiService, marketService));
+        registerCommand("shopadmin", new ShopAdminCommand(this, shardManager));
+        registerCommand("shards", new ShardsCommand(shardManager));
+
+        startMarketTasks();
+        getLogger().info("Market enabled with " + marketCatalog.size() + " catalog item(s) generated.");
+    }
+
+    public void reloadMarket() {
+        reloadConfig();
+        marketConfig = loadMarketConfig();
+        stopMarketTasks();
+        startMarketTasks();
+    }
+
+    public MarketConfig getMarketConfig() {
+        return marketConfig;
+    }
+
+    private void startMarketTasks() {
+        long tickTicks = Math.max(20L, marketConfig.priceTickIntervalSeconds() * 20L);
+        marketPriceTickTask = getServer().getScheduler().runTaskTimerAsynchronously(this, marketPricingEngine::tick, tickTicks, tickTicks);
+        marketAutosaveTask = getServer().getScheduler().runTaskTimer(this, marketPricingEngine::saveAll, 20L * 60L * 5L, 20L * 60L * 5L);
+    }
+
+    private void stopMarketTasks() {
+        cancel(marketPriceTickTask);
+        cancel(marketAutosaveTask);
+        marketPriceTickTask = null;
+        marketAutosaveTask = null;
+    }
+
+    private MarketConfig loadMarketConfig() {
+        FileConfiguration cfg = getConfig();
+
+        java.util.Map<String, Double> multipliers = new LinkedHashMap<>();
+        ConfigurationSection multSection = cfg.getConfigurationSection("market.category-multipliers");
+        if (multSection != null) {
+            for (String key : multSection.getKeys(false)) {
+                multipliers.put(key, multSection.getDouble(key, 1.0));
+            }
+        }
+
+        java.util.Map<String, BoutiqueItem> boutique = new LinkedHashMap<>();
+        ConfigurationSection boutiqueSection = cfg.getConfigurationSection("market.shard-boutique");
+        if (boutiqueSection != null) {
+            for (String id : boutiqueSection.getKeys(false)) {
+                ConfigurationSection s = boutiqueSection.getConfigurationSection(id);
+                if (s == null) {
+                    continue;
+                }
+                boutique.put(id, new BoutiqueItem(
+                        id,
+                        s.getString("display-name", id),
+                        s.getString("description", ""),
+                        s.contains("base-weapon") ? s.getString("base-weapon", null) : null,
+                        s.contains("base-vehicle") ? s.getString("base-vehicle", null) : null,
+                        s.contains("material") ? s.getString("material", null) : null,
+                        s.getInt("custom-model-data", 0),
+                        s.getLong("price-shards", 100)
+                ));
+            }
+        }
+
+        return new MarketConfig(
+                cfg.getString("market.gui.title", "&8Server Market"),
+                multipliers,
+                cfg.getDouble("market.sell-back-fraction", 0.4),
+                cfg.getInt("market.transaction-cooldown-seconds", 1),
+                cfg.getInt("market.max-quantity-per-transaction", 6400),
+                boutique,
+                cfg.getInt("market.dynamic-pricing.tick-interval-seconds", 60),
+                cfg.getDouble("market.dynamic-pricing.buy-impact-percent", 0.05),
+                cfg.getDouble("market.dynamic-pricing.sell-impact-percent", 0.05),
+                cfg.getDouble("market.dynamic-pricing.decay-percent-per-tick", 2.0),
+                cfg.getDouble("market.dynamic-pricing.min-price-factor", 0.25),
+                cfg.getDouble("market.dynamic-pricing.max-price-factor", 4.0)
+        );
     }
 
     // ═══════════════════════════════════════════════════════════════════════
@@ -1082,9 +921,11 @@ public final class RealWorldPlugin extends JavaPlugin {
         getServer().getPluginManager().registerEvents(new OnboardingListener(this, citizenManager, guiService, this::getCareersConfig), this);
         getServer().getPluginManager().registerEvents(new TaskBonusListener(citizenManager, this::getCareersConfig, careersEconomy), this);
 
-        registerCommand("career", new CareerCommand(this, citizenManager, guiService));
+        registerCommand("career", new CareerCommand(this, citizenManager, guiService, economyProvider, stockPortfolioService, shardManager));
 
         careersWageTask = getServer().getScheduler().runTaskTimerAsynchronously(this, () -> citizenManager.tickWages(careersEconomy), 20L * 60L, 20L * 60L);
+        careersPlaytimeTask = getServer().getScheduler().runTaskTimer(this,
+                () -> citizenManager.tickPlaytime(new java.util.ArrayList<>(getServer().getOnlinePlayers())), 20L * 60L, 20L * 60L);
     }
 
     public void reloadCareers() {
@@ -1131,62 +972,14 @@ public final class RealWorldPlugin extends JavaPlugin {
                 }
             }
         }
-        return new CareersConfig(jobs, cfg.getString("careers.onboarding.welcome-message", "&6Welcome!"));
-    }
-
-    // ═══════════════════════════════════════════════════════════════════════
-    // AICHAT
-    // ═══════════════════════════════════════════════════════════════════════
-
-    private void setupAIChat() {
-        aiMemory = new ConversationMemory();
-        aiChatConfig = loadAIChatConfig();
-        aiChatClient = buildAiChatClient(aiChatConfig);
-        aiServerContext = new ServerContextService();
-
-        registerCommand("ai", new AICommand(this, aiMemory));
-    }
-
-    public void reloadAIChat() {
-        reloadConfig();
-        aiChatConfig = loadAIChatConfig();
-        aiChatClient = buildAiChatClient(aiChatConfig);
-        aiServerContext = new ServerContextService();
-    }
-
-    public AIChatConfig getAIChatConfig() {
-        return aiChatConfig;
-    }
-
-    public ChatClient getChatClient() {
-        return aiChatClient;
-    }
-
-    public ServerContextService getServerContext() {
-        return aiServerContext;
-    }
-
-    private ChatClient buildAiChatClient(AIChatConfig config) {
-        return switch (config.provider().toLowerCase(Locale.ROOT)) {
-            case "gemini" -> new GeminiApiClient(this);
-            case "ollama" -> new OllamaApiClient(this, config.ollamaBaseUrl());
-            default -> new ClaudeApiClient(this);
-        };
-    }
-
-    private AIChatConfig loadAIChatConfig() {
-        FileConfiguration cfg = getConfig();
-        return new AIChatConfig(
-                cfg.getString("aichat.provider", "anthropic"),
-                cfg.getString("aichat.api-key", ""),
-                cfg.getString("aichat.model", "claude-sonnet-5"),
-                cfg.getString("aichat.ollama-base-url", "http://localhost:11434"),
-                cfg.getString("aichat.assistant-name", "Astra"),
-                cfg.getString("aichat.system-prompt", "You are a helpful assistant for this Minecraft server."),
-                cfg.getInt("aichat.max-tokens", 400),
-                cfg.getInt("aichat.memory-limit", 6),
-                cfg.getInt("aichat.cooldown-seconds", 3),
-                cfg.getInt("aichat.max-message-length", 400)
+        return new CareersConfig(
+                jobs,
+                cfg.getString("careers.onboarding.welcome-message", "&6Welcome!"),
+                cfg.getInt("careers.school.minor-to-adult-playtime-minutes", 600),
+                cfg.getDouble("careers.legacy.inheritance-percent", 10.0),
+                cfg.getLong("careers.legacy.shard-bonus-per-legacy", 50),
+                cfg.getDouble("careers.legacy.wage-bonus-percent-per-legacy", 2.0)
         );
     }
+
 }

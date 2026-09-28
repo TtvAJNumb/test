@@ -51,7 +51,9 @@ public final class DatabaseManager {
                     player_id TEXT PRIMARY KEY,
                     age_tier TEXT,
                     job_id TEXT,
-                    last_wage_at INTEGER NOT NULL DEFAULT 0
+                    last_wage_at INTEGER NOT NULL DEFAULT 0,
+                    playtime_minutes INTEGER NOT NULL DEFAULT 0,
+                    legacy_count INTEGER NOT NULL DEFAULT 0
                 );
                 """;
         try (Connection connection = getConnection(); Statement statement = connection.createStatement()) {

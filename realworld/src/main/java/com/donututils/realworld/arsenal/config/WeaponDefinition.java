@@ -19,6 +19,9 @@ public record WeaponDefinition(
         double growthPerShotDegrees,
         double decayPerSecondDegrees,
         Material ammoMaterial,
-        String ammoDisplayName
+        String ammoDisplayName,
+        double splashRadius,
+        double priceMoney,
+        double ammoPriceMoney
 ) {
 }

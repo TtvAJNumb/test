@@ -92,12 +92,16 @@ public final class WeaponManager {
         Vector direction = applySpread(eyeLocation.getDirection(), spreadBeforeShot);
 
         World world = shooter.getWorld();
-        RayTraceResult result = world.rayTraceEntities(eyeLocation, direction, definition.maxRange(), 0.3,
-                candidate -> candidate instanceof LivingEntity && !candidate.equals(shooter));
+        if (definition.splashRadius() > 0) {
+            fireExplosive(shooter, world, eyeLocation, direction, definition);
+        } else {
+            RayTraceResult result = world.rayTraceEntities(eyeLocation, direction, definition.maxRange(), 0.3,
+                    candidate -> candidate instanceof LivingEntity && !candidate.equals(shooter));
 
-        if (result != null && result.getHitEntity() instanceof LivingEntity target) {
-            double damage = computeDamage(definition, target, result.getHitPosition());
-            target.damage(damage, shooter);
+            if (result != null && result.getHitEntity() instanceof LivingEntity target) {
+                double damage = computeDamage(definition, target, result.getHitPosition());
+                target.damage(damage, shooter);
+            }
         }
 
         int remaining = ammo - 1;
@@ -109,6 +113,31 @@ public final class WeaponManager {
         if (remaining == 0) {
             shooter.sendMessage(color("&eEmpty - reload (swap-hands key)."));
         }
+    }
+
+    /** RPG-style heavy ordnance: not hitscan damage against one target - the rocket flies until it hits
+     * an entity or a block, then detonates a real vanilla explosion there (breaking terrain for
+     * structural breaching, and applying vanilla explosion damage/knockback to everyone in range).
+     * "Splash radius" from config is used directly as the explosion's power. */
+    private void fireExplosive(Player shooter, World world, Location eyeLocation, Vector direction, WeaponDefinition definition) {
+        RayTraceResult entityHit = world.rayTraceEntities(eyeLocation, direction, definition.maxRange(), 0.3,
+                candidate -> candidate instanceof LivingEntity && !candidate.equals(shooter));
+        RayTraceResult blockHit = world.rayTraceBlocks(eyeLocation, direction, definition.maxRange());
+
+        Location impact;
+        if (entityHit != null && entityHit.getHitPosition() != null
+                && (blockHit == null || blockHit.getHitPosition() == null
+                    || eyeLocation.distance(entityHit.getHitPosition().toLocation(world)) <= eyeLocation.distance(blockHit.getHitPosition().toLocation(world)))) {
+            impact = entityHit.getHitPosition().toLocation(world);
+        } else if (blockHit != null && blockHit.getHitPosition() != null) {
+            impact = blockHit.getHitPosition().toLocation(world);
+        } else {
+            Vector traveled = direction.clone().multiply(definition.maxRange());
+            impact = new Location(world, eyeLocation.getX() + traveled.getX(),
+                    eyeLocation.getY() + traveled.getY(), eyeLocation.getZ() + traveled.getZ());
+        }
+
+        world.createExplosion(impact, (float) definition.splashRadius(), false, true, shooter);
     }
 
     private double computeDamage(WeaponDefinition definition, LivingEntity target, Vector hitPosition) {

@@ -10,12 +10,37 @@ public final class CitizenProfile {
     private AgeTier ageTier;
     private String jobId;
     private long lastWageAtMillis;
+    private int playtimeMinutes;
+    private int legacyCount;
 
     public CitizenProfile(UUID playerId, AgeTier ageTier, String jobId, long lastWageAtMillis) {
+        this(playerId, ageTier, jobId, lastWageAtMillis, 0, 0);
+    }
+
+    public CitizenProfile(UUID playerId, AgeTier ageTier, String jobId, long lastWageAtMillis,
+                           int playtimeMinutes, int legacyCount) {
         this.playerId = playerId;
         this.ageTier = ageTier;
         this.jobId = jobId;
         this.lastWageAtMillis = lastWageAtMillis;
+        this.playtimeMinutes = playtimeMinutes;
+        this.legacyCount = legacyCount;
+    }
+
+    public int playtimeMinutes() {
+        return playtimeMinutes;
+    }
+
+    public void setPlaytimeMinutes(int playtimeMinutes) {
+        this.playtimeMinutes = playtimeMinutes;
+    }
+
+    public int legacyCount() {
+        return legacyCount;
+    }
+
+    public void setLegacyCount(int legacyCount) {
+        this.legacyCount = legacyCount;
     }
 
     public UUID playerId() {

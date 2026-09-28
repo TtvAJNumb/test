@@ -4,7 +4,11 @@ import java.util.LinkedHashMap;
 import java.util.Locale;
 import java.util.Map;
 
-public record CareersConfig(Map<String, JobDefinition> jobs, String welcomeMessage) {
+public record CareersConfig(Map<String, JobDefinition> jobs, String welcomeMessage,
+                             int minorToAdultPlaytimeMinutes,
+                             double legacyInheritancePercent,
+                             long legacyShardBonusPerLegacy,
+                             double legacyWageBonusPercentPerLegacy) {
 
     public JobDefinition job(String id) {
         return jobs.get(id.toLowerCase(Locale.ROOT));
