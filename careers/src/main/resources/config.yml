@@ -1,0 +1,151 @@
+# Careers - on-join age tier + job selection, automated wages, and real task bonuses for jobs that
+# map to vanilla actions. Standalone - uses Vault for paying wages (works with Ledger, or any other
+# Vault-compatible economy).
+#
+# Every job pays wage-amount on a timer (wage-interval-minutes). Jobs whose real-world equivalent is
+# a resource-gathering action also earn task bonuses straight from vanilla events - no other plugin
+# needs to be touched for those. Jobs whose bonus depends on something another plugin owns (Motors
+# repairs, Municipal arrests, Ledger dividends, stock trades) are passive-wage-only for now - a
+# custom event bridge into those plugins is a separate, later addition, not silently faked here.
+
+onboarding:
+  # Shown the first time a player joins with no age tier chosen yet - opens the age-tier GUI.
+  welcome-message: "&6&lWelcome! &7Pick an age tier, then a job, to start earning a wage."
+
+jobs:
+  # ── Tier 1: entry-level, available to Minors ────────────────────────────────
+  lumberjack:
+    display-name: "&2Lumberjack"
+    min-age-tier: MINOR
+    wage-amount: 25.0
+    wage-interval-minutes: 30
+    block-bonuses:
+      OAK_LOG: 1.0
+      BIRCH_LOG: 1.0
+      SPRUCE_LOG: 1.0
+      JUNGLE_LOG: 1.0
+      ACACIA_LOG: 1.0
+      DARK_OAK_LOG: 1.0
+      MANGROVE_LOG: 1.0
+      CHERRY_LOG: 1.0
+
+  farmer:
+    display-name: "&eSugar Cane & Crop Farmer"
+    min-age-tier: MINOR
+    wage-amount: 25.0
+    wage-interval-minutes: 30
+    block-bonuses:
+      WHEAT: 1.0
+      CARROTS: 1.0
+      POTATOES: 1.0
+      BEETROOTS: 1.0
+      SUGAR_CANE: 0.5
+
+  fisherman:
+    display-name: "&bFisherman"
+    min-age-tier: MINOR
+    wage-amount: 20.0
+    wage-interval-minutes: 30
+    fish-catch-bonus: 3.0
+
+  rancher:
+    display-name: "&dAnimal Breeder & Rancher"
+    min-age-tier: MINOR
+    wage-amount: 30.0
+    wage-interval-minutes: 30
+    breed-bonus: 5.0
+
+  # ── Tier 2: skilled trades, Adult only ───────────────────────────────────────
+  miner:
+    display-name: "&7Miner & Speleologist"
+    min-age-tier: ADULT
+    wage-amount: 60.0
+    wage-interval-minutes: 30
+    block-bonuses:
+      COAL_ORE: 2.0
+      DEEPSLATE_COAL_ORE: 2.0
+      IRON_ORE: 4.0
+      DEEPSLATE_IRON_ORE: 4.0
+      COPPER_ORE: 3.0
+      DEEPSLATE_COPPER_ORE: 3.0
+      GOLD_ORE: 6.0
+      DEEPSLATE_GOLD_ORE: 6.0
+      REDSTONE_ORE: 3.0
+      DEEPSLATE_REDSTONE_ORE: 3.0
+      LAPIS_ORE: 5.0
+      DEEPSLATE_LAPIS_ORE: 5.0
+      DIAMOND_ORE: 15.0
+      DEEPSLATE_DIAMOND_ORE: 15.0
+      EMERALD_ORE: 18.0
+      DEEPSLATE_EMERALD_ORE: 18.0
+      ANCIENT_DEBRIS: 40.0
+
+  mason:
+    display-name: "&8Mason & Quarry Worker"
+    min-age-tier: ADULT
+    wage-amount: 55.0
+    wage-interval-minutes: 30
+    block-bonuses:
+      STONE: 0.4
+      COBBLESTONE: 0.3
+      DEEPSLATE: 0.4
+      COBBLED_DEEPSLATE: 0.3
+      GRANITE: 0.4
+      DIORITE: 0.4
+      ANDESITE: 0.4
+
+  # Task bonus (repairing a vehicle via /motors repair) not wired yet - passive wage only for now.
+  mechanic:
+    display-name: "&6Automotive Mechanic"
+    min-age-tier: ADULT
+    wage-amount: 75.0
+    wage-interval-minutes: 30
+
+  # Task bonus (delivering cargo via Motors) not wired yet - passive wage only for now.
+  logistics:
+    display-name: "&9Logistics & Delivery Driver"
+    min-age-tier: ADULT
+    wage-amount: 50.0
+    wage-interval-minutes: 30
+
+  # ── Tier 3: public service, Adult only ───────────────────────────────────────
+  # Task bonus (bounty on a successful /police arrest) not wired yet - passive wage only for now.
+  police:
+    display-name: "&1Police Officer"
+    min-age-tier: ADULT
+    wage-amount: 120.0
+    wage-interval-minutes: 30
+
+  attorney:
+    display-name: "&5Defense Attorney / Prosecutor"
+    min-age-tier: ADULT
+    wage-amount: 110.0
+    wage-interval-minutes: 30
+
+  medic:
+    display-name: "&cParamedic"
+    min-age-tier: ADULT
+    wage-amount: 100.0
+    wage-interval-minutes: 30
+
+  # ── Tier 4: corporate/financial, Adult only ─────────────────────────────────
+  # Task bonus (cut of /corp dividend payouts) not wired yet - passive wage only for now.
+  executive:
+    display-name: "&6&lCorporate Executive"
+    min-age-tier: ADULT
+    wage-amount: 250.0
+    wage-interval-minutes: 30
+
+  # Task bonus (cut of StockMarket broker fees) not wired yet - passive wage only for now.
+  stockbroker:
+    display-name: "&a&lStockbroker"
+    min-age-tier: ADULT
+    wage-amount: 200.0
+    wage-interval-minutes: 30
+
+  # Task bonus (rent from Municipal land claims) not wired yet - passive wage only for now.
+  landlord:
+    display-name: "&e&lReal Estate Developer"
+    min-age-tier: ADULT
+    wage-amount: 180.0
+    wage-interval-minutes: 30

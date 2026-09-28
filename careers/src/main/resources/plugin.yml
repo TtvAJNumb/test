@@ -1,0 +1,22 @@
+name: Careers
+version: ${project.version}
+main: com.donututils.careers.CareersPlugin
+api-version: "1.21"
+folia-supported: false
+description: On-join age tier + job selection, with automated wages and real task bonuses for jobs that map to vanilla actions (mining, logging, farming, fishing, breeding). Backed by its own SQLite database.
+authors: [donututils]
+depend:
+  - Vault
+commands:
+  career:
+    description: Check your age/job, list jobs, or reopen the choice menu.
+    usage: /career [info|list|choose <job>|reopen|reload]
+    permission: careers.command.career
+    permission-message: "&cYou do not have permission to use /career."
+permissions:
+  careers.command.career:
+    description: Allows checking and choosing a career
+    default: true
+  careers.admin:
+    description: Allows reloading Careers' config
+    default: op

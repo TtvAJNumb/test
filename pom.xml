@@ -22,6 +22,7 @@
         <module>municipal</module>
         <module>arsenal</module>
         <module>motors</module>
+        <module>careers</module>
     </modules>
 
     <properties>
