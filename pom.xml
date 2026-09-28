@@ -23,6 +23,7 @@
         <module>arsenal</module>
         <module>motors</module>
         <module>careers</module>
+        <module>realworld</module>
     </modules>
 
     <properties>

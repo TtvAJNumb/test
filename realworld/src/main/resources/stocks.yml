@@ -1,0 +1,101 @@
+# Starter stocks so the market isn't empty on first run. Feel free to edit these directly (the
+# plugin only reads this file on startup) or manage stocks in-game with /stockadmin.
+# drift/volatility are fractions per tick - drift is the average trend, volatility is the typical
+# random swing size. Small numbers: 0.0002 drift ~= a slow long-term climb, 0.01 volatility ~= a
+# typical +-1% wobble per tick.
+stocks:
+  DONT:
+    name: "Donut Corp"
+    sector: "Food"
+    material: "CAKE"
+    price: 100.0
+    previousClose: 100.0
+    dayOpen: 100.0
+    dayHigh: 100.0
+    dayLow: 100.0
+    volumeToday: 0
+    sharesOutstanding: 1000000
+    drift: 0.0002
+    volatility: 0.01
+    dividendYieldPerPayout: 0.0
+    dividendIntervalMillis: 0
+    lastDividendAtMillis: 0
+    halted: false
+    haltedUntilMillis: 0
+    delisted: false
+  PICK:
+    name: "Pickaxe Industries"
+    sector: "Mining"
+    material: "IRON_PICKAXE"
+    price: 250.0
+    previousClose: 250.0
+    dayOpen: 250.0
+    dayHigh: 250.0
+    dayLow: 250.0
+    volumeToday: 0
+    sharesOutstanding: 500000
+    drift: 0.0001
+    volatility: 0.02
+    dividendYieldPerPayout: 0.01
+    dividendIntervalMillis: 3600000
+    lastDividendAtMillis: 0
+    halted: false
+    haltedUntilMillis: 0
+    delisted: false
+  CRFT:
+    name: "Crafters United"
+    sector: "Utility"
+    material: "CRAFTING_TABLE"
+    price: 50.0
+    previousClose: 50.0
+    dayOpen: 50.0
+    dayHigh: 50.0
+    dayLow: 50.0
+    volumeToday: 0
+    sharesOutstanding: 2000000
+    drift: 0.0
+    volatility: 0.005
+    dividendYieldPerPayout: 0.02
+    dividendIntervalMillis: 3600000
+    lastDividendAtMillis: 0
+    halted: false
+    haltedUntilMillis: 0
+    delisted: false
+  NTHR:
+    name: "Nether Ventures"
+    sector: "Speculative"
+    material: "NETHER_STAR"
+    price: 15.0
+    previousClose: 15.0
+    dayOpen: 15.0
+    dayHigh: 15.0
+    dayLow: 15.0
+    volumeToday: 0
+    sharesOutstanding: 5000000
+    drift: 0.0
+    volatility: 0.05
+    dividendYieldPerPayout: 0.0
+    dividendIntervalMillis: 0
+    lastDividendAtMillis: 0
+    halted: false
+    haltedUntilMillis: 0
+    delisted: false
+  BNKR:
+    name: "Bunker Holdings"
+    sector: "Finance"
+    material: "GOLD_INGOT"
+    price: 500.0
+    previousClose: 500.0
+    dayOpen: 500.0
+    dayHigh: 500.0
+    dayLow: 500.0
+    volumeToday: 0
+    sharesOutstanding: 200000
+    drift: 0.00005
+    volatility: 0.003
+    dividendYieldPerPayout: 0.005
+    dividendIntervalMillis: 3600000
+    lastDividendAtMillis: 0
+    halted: false
+    haltedUntilMillis: 0
+    delisted: false

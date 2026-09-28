@@ -1,0 +1,17 @@
+# Every trade-related message DynamicShop sends a player, in one place. Edit the wording however you
+# like - {placeholders} get filled in automatically. Colors are applied by whatever's sending the
+# message (green for success, red for failure), so leave color codes out of these unless you want to
+# override that.
+unknown-item: "That item isn't sold here."
+buy-disabled: "{item} isn't currently buyable."
+sell-disabled: "{item} isn't currently sellable."
+quantity-positive: "Quantity must be positive."
+buy-restricted: "You need to have collected {item} in the world before you can buy it."
+max-quantity: "You can only trade up to {max} at a time."
+cooldown: "Slow down - wait a moment before trading {item} again."
+currency-unavailable: "That item's currency isn't available right now."
+buy-insufficient-funds: "You don't have enough {currency} for that ({total} needed)."
+payment-failed: "The payment failed - try again."
+buy-success: "Bought {quantity}x {item} for {total}."
+sell-success: "Sold {quantity}x {item} for {total}."
+autosell-success: "Auto-sold {quantity}x {item} for {total}."

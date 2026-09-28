@@ -1,0 +1,526 @@
+# RealWorld - every subsystem's settings live in its own top-level section below, exactly as they
+# did in each standalone plugin, just nested one level deeper under that subsystem's name (this is
+# needed because a couple of key names, like tick-interval-seconds and loans.*, are reused by more
+# than one subsystem and would otherwise collide in one flat file).
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# LEDGER - native banking, credit, loans, and corporate stock market. This IS the
+# server's economy - it implements Vault's Economy interface directly and registers
+# itself, so every other subsystem below uses it automatically. Vault must still be
+# installed so that registration works.
+# ═══════════════════════════════════════════════════════════════════════════════
+ledger:
+  # New players start with this checking-account balance the first time they join.
+  starting-balance: 1000.0
+
+  bank:
+    # APY for a savings account. Interest compounds continuously (prorated for partial days), applied
+    # by a background task every interest-tick-minutes.
+    savings-apy-percent: 4.0
+    interest-tick-minutes: 15
+
+  credit:
+    # Every player starts here (a mid-range starting score, same idea as a thin credit file in
+    # real life). Range is capped to 300-850.
+    starting-score: 650
+    # Score point changes per event.
+    points-per-on-time-payment: 5
+    points-per-missed-payment: -25
+    points-per-default: -100
+
+  loans:
+    # Credit-score tiers -> max loan amount and APR. Highest-scoring tier that a player's score meets
+    # or exceeds is used. Keep this list sorted highest score first.
+    tiers:
+      - min-score: 750
+        max-loan-amount: 50000.0
+        apr-percent: 6.0
+      - min-score: 650
+        max-loan-amount: 15000.0
+        apr-percent: 12.0
+      - min-score: 500
+        max-loan-amount: 5000.0
+        apr-percent: 22.0
+      - min-score: 300
+        max-loan-amount: 1000.0
+        apr-percent: 35.0
+    term-days: 30
+    # Missed payments before a loan is declared in default.
+    missed-payments-before-default: 3
+    payment-tick-minutes: 15
+
+  corporations:
+    founding-cost: 2500.0
+    default-total-shares: 1000
+    # Share price baseline drift/volatility (same idea as StockMarket's random-walk engine).
+    base-drift: 0.0001
+    base-volatility: 0.01
+    # How much reported profit/loss nudges price per report, as a fraction of share price per dollar
+    # of profit relative to treasury size.
+    profit-price-sensitivity: 0.5
+    price-tick-minutes: 5
+    # /corp report figures are founder-supplied and unverified - nothing stops a founder from typing
+    # an arbitrary number. To stop that from printing unlimited money, BOTH the price move and the
+    # money actually credited to the treasury are capped at this percent of the corp's current market
+    # cap per report (not the raw reported profit), and report-cooldown-minutes stops rapid repeats
+    # from compounding that into unlimited money over time.
+    max-report-impact-percent: 25.0
+    report-cooldown-minutes: 60
+
+  tax:
+    # Percent of a player's total checking+savings balance collected periodically as wealth tax.
+    wealth-tax-percent: 1.0
+    wealth-tax-tick-hours: 24
+    # Percent collected on every Vault transaction processed through Ledger's own commands (deposits/
+    # withdrawals between checking and savings, share trades, etc). Does not apply to interest itself.
+    transaction-tax-percent: 2.0
+    # Percent of a corporation's treasury collected as corporate tax per cycle.
+    corporate-tax-percent: 5.0
+    corporate-tax-tick-hours: 24
+    # A corporation can write off reported expenses against revenue before corporate tax is calculated.
+    expense-writeoff-enabled: true
+    # A corporation flagged as a "trust" (see /corp trust) shields this percent of its treasury from
+    # corporate tax, at the cost of a one-time setup fee (trust-setup-cost).
+    trust-shield-percent: 40.0
+    trust-setup-cost: 10000.0
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# STOCKMARKET - real-time-ish public stock prices driven by a drift/volatility model
+# plus real player trading pressure, dividends, splits, IPOs, and circuit breakers.
+# ═══════════════════════════════════════════════════════════════════════════════
+stockmarket:
+  # How often (in seconds) every stock's price updates. Each tick is a random-walk step (drift +
+  # volatility) plus a small nudge from any real buying/selling since the last tick.
+  tick-interval-seconds: 30
+
+  # How long (in real minutes) one "trading day" lasts before day-open/high/low/volume reset and
+  # today's close becomes tomorrow's "previous close".
+  trading-day-length-minutes: 60
+
+  # The largest fraction of a stock's market cap that one tick's net buying/selling can move its
+  # price, regardless of how much money was actually traded.
+  max-trade-impact-percent-per-tick: 2.0
+
+  # If a stock's price would move more than this percent in one tick, the move is capped at this
+  # percent and the stock is halted from trading for circuit-breaker-cooldown-seconds.
+  circuit-breaker-threshold-percent: 15.0
+  circuit-breaker-cooldown-seconds: 300
+
+  # Broker commission charged on every trade, as a percent of the trade's value. This fee funds the
+  # dividend pool (see DividendPool) rather than vanishing, so dividends are backed by real money.
+  broker-fee-percent: 0.5
+
+  # No player can own more than this percent of a stock's total shares outstanding. Set to 0 to
+  # disable the cap.
+  max-shares-per-player-percent: 10.0
+
+  # Minimum time between a player's trades, in milliseconds.
+  trade-rate-limit-millis: 1000
+
+  discord:
+    webhook-url: ""
+    username: "StockMarket"
+    alerts:
+      big-mover: true
+      circuit-breaker: true
+      ipo: true
+      split: true
+      delisting: true
+    daily-summary:
+      enabled: false
+      hour-of-day-utc: 12
+
+  # A single tick move of at least this percent also posts a "big mover" Discord alert.
+  big-mover-alert-threshold-percent: 5.0
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# DYNAMICSHOP - config-driven item shop with supply/demand pricing, multi-currency
+# (Ledger money + PlayerPoints shards), auto-sell, loans, and economy stats.
+# ═══════════════════════════════════════════════════════════════════════════════
+dynamicshop:
+  # How often (seconds) item prices update based on recent buy/sell pressure.
+  tick-interval-seconds: 30
+
+  # Autosave interval (seconds) for item prices, player data, and loans.
+  autosave-interval-seconds: 300
+
+  currencies:
+    money:
+      enabled: true
+      # Bridges to Ledger (or whatever other economy is registered with Vault).
+      display-name: "Money"
+    shards:
+      enabled: true
+      # Bridges to the PlayerPoints plugin. Set enabled: false if you don't use a second currency,
+      # or don't have PlayerPoints installed.
+      display-name: "Shards"
+
+  gui:
+    title: "&8Server Shop"
+
+  # Turn any feature fully off here without uninstalling the plugin.
+  features:
+    auto-sell: true
+    loans: true
+    web-server: false
+    gdp-stats: true
+    tutorial: true
+    # If true, players can only buy a material after they've sold/collected it at least once before.
+    purchase-restriction: false
+
+  exploit-protection:
+    # Minimum seconds between transactions per player, per item.
+    transaction-cooldown-seconds: 1
+    # Hard cap on quantity per single transaction, on top of each item's own max-buy/max-sell.
+    global-max-quantity-per-transaction: 6400
+
+  loans:
+    max-loan-amount: 10000.0
+    interest-rate-percent-per-day: 5.0
+    max-outstanding-loans-per-player: 1
+
+  web-server:
+    # Bound to localhost by default - put your own reverse proxy/firewall in front if you expose it.
+    bind-address: "127.0.0.1"
+    port: 8082
+    # Optional: required as an X-Api-Key header if set.
+    api-key: ""
+
+  gdp:
+    # "GDP" here means total buy+sell transaction volume in this trailing window - computed live
+    # from the transaction log (no separate snapshot storage needed).
+    window-hours: 24
+
+  tutorial:
+    # Sent as separate chat lines, in order, the first time a player opens the shop.
+    lines:
+      - "&6&lWelcome to the Server Shop!"
+      - "&7Use &f/shop &7to open the shop GUI."
+      - "&7Click the tabs at the top to filter by currency (Money, Shards, or All)."
+      - "&7Click an item to buy; shift-click to sell."
+      - "&7Use &f/shop sell hand &7to quickly sell what you're holding."
+      - "&7Use &f/shop autosell <item> &7to toggle automatically selling an item when you mine it."
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# MUNICIPAL - law enforcement, courts, jail, land claims/property tax, and
+# business/building/weapon permits.
+# ═══════════════════════════════════════════════════════════════════════════════
+municipal:
+  permits:
+    business:
+      cost: 5000.0
+      permission: "municipal.permit.business"
+    building:
+      cost: 1000.0
+      permission: "municipal.permit.building"
+    weapon:
+      cost: 2500.0
+      permission: "municipal.permit.weapon"
+
+  enforcement:
+    # Worlds where placing a block requires the building permit. Empty = enforced nowhere.
+    city-limit-worlds:
+      - "world"
+    # Materials that require the weapon permit just to use (right-click/interact with).
+    controlled-weapons:
+      - "BOW"
+      - "CROSSBOW"
+      - "TRIDENT"
+
+  jail:
+    world: "world"
+    x: 0.0
+    y: 100.0
+    z: 0.0
+    # How far (blocks) a jailed player can wander from the jail point before being snapped back.
+    # Only used as a fallback if no "jail" named location/cuboid has been defined via /location.
+    radius: 10.0
+    # Commands jailed players can still use (without the leading slash). "help" always allowed.
+    allowed-commands:
+      - "help"
+      - "msg"
+      - "r"
+    # How often (seconds) to check for players whose sentence has finished and release them.
+    release-check-seconds: 30
+
+  court:
+    # Hard cap on a single sentence, regardless of what a judge requests.
+    max-sentence-minutes: 10080
+
+  claims:
+    # Grid-based land claiming - one claim covers one real 16x16 vanilla chunk. Claiming requires
+    # holding the building permit (see permits.building above).
+    claim-fee: 500.0
+    # Property tax billed per claimed chunk, per tax tick, deducted straight from the owner's balance.
+    tax-per-chunk: 50.0
+    tax-tick-hours: 24
+    # How many consecutive missed tax payments before a claim is foreclosed.
+    foreclosure-after-missed-ticks: 14
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# ARSENAL - custom raycast-based firearms.
+# ═══════════════════════════════════════════════════════════════════════════════
+arsenal:
+  weapons:
+    ak47:
+      material: CROSSBOW
+      custom-model-data: 100001
+      display-name: "&cAK-47"
+      damage:
+        base: 4.0
+        headshot-multiplier: 2.5
+        limb-multiplier: 0.75
+      magazine-size: 30
+      reload-seconds: 2.5
+      fire-cooldown-ms: 150
+      max-range: 60.0
+      spread:
+        base-degrees: 1.0
+        max-degrees: 6.0
+        growth-per-shot-degrees: 0.5
+        decay-per-second-degrees: 4.0
+      ammo:
+        material: IRON_NUGGET
+        display-name: "&7AK-47 Magazine"
+
+    pistol:
+      material: CROSSBOW
+      custom-model-data: 100010
+      display-name: "&fPistol"
+      damage:
+        base: 3.0
+        headshot-multiplier: 3.0
+        limb-multiplier: 0.7
+      magazine-size: 12
+      reload-seconds: 1.5
+      fire-cooldown-ms: 300
+      max-range: 40.0
+      spread:
+        base-degrees: 0.5
+        max-degrees: 3.0
+        growth-per-shot-degrees: 0.5
+        decay-per-second-degrees: 5.0
+      ammo:
+        material: IRON_NUGGET
+        display-name: "&7Pistol Magazine"
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# MOTORS - custom vehicles built on vanilla boat/minecart riding physics.
+# ═══════════════════════════════════════════════════════════════════════════════
+motors:
+  vehicles:
+    sedan:
+      kind: BOAT
+      key-material: OAK_BOAT
+      key-custom-model-data: 42001
+      key-display-name: "&b&lSedan &7(place)"
+      body-helmet-material: LEATHER_HORSE_ARMOR
+      body-helmet-custom-model-data: 42101
+      display-name: "&b&lSedan"
+      max-fuel: 1000.0
+      fuel-drain-per-second: 0.5
+      max-wear: 100.0
+      wear-per-block: 0.02
+      refuel-cost-per-unit: 0.5
+      repair-cost-per-wear: 4.0
+
+    cargo-train:
+      kind: MINECART
+      key-material: MINECART
+      key-custom-model-data: 42002
+      key-display-name: "&6&lCargo Train &7(place on rail)"
+      body-helmet-material: IRON_HORSE_ARMOR
+      body-helmet-custom-model-data: 42102
+      display-name: "&6&lCargo Train"
+      max-fuel: 2000.0
+      fuel-drain-per-second: 0.4
+      max-wear: 150.0
+      wear-per-block: 0.015
+      refuel-cost-per-unit: 0.4
+      repair-cost-per-wear: 5.0
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# CAREERS - on-join age tier + job selection, automated wages, and real task
+# bonuses for jobs that map to vanilla actions.
+# ═══════════════════════════════════════════════════════════════════════════════
+careers:
+  onboarding:
+    # Shown the first time a player joins with no age tier chosen yet - opens the age-tier GUI.
+    welcome-message: "&6&lWelcome! &7Pick an age tier, then a job, to start earning a wage."
+
+  jobs:
+    # ── Tier 1: entry-level, available to Minors ────────────────────────────────
+    lumberjack:
+      display-name: "&2Lumberjack"
+      min-age-tier: MINOR
+      wage-amount: 25.0
+      wage-interval-minutes: 30
+      block-bonuses:
+        OAK_LOG: 1.0
+        BIRCH_LOG: 1.0
+        SPRUCE_LOG: 1.0
+        JUNGLE_LOG: 1.0
+        ACACIA_LOG: 1.0
+        DARK_OAK_LOG: 1.0
+        MANGROVE_LOG: 1.0
+        CHERRY_LOG: 1.0
+
+    farmer:
+      display-name: "&eSugar Cane & Crop Farmer"
+      min-age-tier: MINOR
+      wage-amount: 25.0
+      wage-interval-minutes: 30
+      block-bonuses:
+        WHEAT: 1.0
+        CARROTS: 1.0
+        POTATOES: 1.0
+        BEETROOTS: 1.0
+        SUGAR_CANE: 0.5
+
+    fisherman:
+      display-name: "&bFisherman"
+      min-age-tier: MINOR
+      wage-amount: 20.0
+      wage-interval-minutes: 30
+      fish-catch-bonus: 3.0
+
+    rancher:
+      display-name: "&dAnimal Breeder & Rancher"
+      min-age-tier: MINOR
+      wage-amount: 30.0
+      wage-interval-minutes: 30
+      breed-bonus: 5.0
+
+    # ── Tier 2: skilled trades, Adult only ───────────────────────────────────────
+    miner:
+      display-name: "&7Miner & Speleologist"
+      min-age-tier: ADULT
+      wage-amount: 60.0
+      wage-interval-minutes: 30
+      block-bonuses:
+        COAL_ORE: 2.0
+        DEEPSLATE_COAL_ORE: 2.0
+        IRON_ORE: 4.0
+        DEEPSLATE_IRON_ORE: 4.0
+        COPPER_ORE: 3.0
+        DEEPSLATE_COPPER_ORE: 3.0
+        GOLD_ORE: 6.0
+        DEEPSLATE_GOLD_ORE: 6.0
+        REDSTONE_ORE: 3.0
+        DEEPSLATE_REDSTONE_ORE: 3.0
+        LAPIS_ORE: 5.0
+        DEEPSLATE_LAPIS_ORE: 5.0
+        DIAMOND_ORE: 15.0
+        DEEPSLATE_DIAMOND_ORE: 15.0
+        EMERALD_ORE: 18.0
+        DEEPSLATE_EMERALD_ORE: 18.0
+        ANCIENT_DEBRIS: 40.0
+
+    mason:
+      display-name: "&8Mason & Quarry Worker"
+      min-age-tier: ADULT
+      wage-amount: 55.0
+      wage-interval-minutes: 30
+      block-bonuses:
+        STONE: 0.4
+        COBBLESTONE: 0.3
+        DEEPSLATE: 0.4
+        COBBLED_DEEPSLATE: 0.3
+        GRANITE: 0.4
+        DIORITE: 0.4
+        ANDESITE: 0.4
+
+    # Task bonus (repairing a vehicle via /motors repair) not wired yet - passive wage only for now.
+    mechanic:
+      display-name: "&6Automotive Mechanic"
+      min-age-tier: ADULT
+      wage-amount: 75.0
+      wage-interval-minutes: 30
+
+    # Task bonus (delivering cargo via Motors) not wired yet - passive wage only for now.
+    logistics:
+      display-name: "&9Logistics & Delivery Driver"
+      min-age-tier: ADULT
+      wage-amount: 50.0
+      wage-interval-minutes: 30
+
+    # ── Tier 3: public service, Adult only ───────────────────────────────────────
+    # Task bonus (bounty on a successful /police arrest) not wired yet - passive wage only for now.
+    police:
+      display-name: "&1Police Officer"
+      min-age-tier: ADULT
+      wage-amount: 120.0
+      wage-interval-minutes: 30
+
+    attorney:
+      display-name: "&5Defense Attorney / Prosecutor"
+      min-age-tier: ADULT
+      wage-amount: 110.0
+      wage-interval-minutes: 30
+
+    medic:
+      display-name: "&cParamedic"
+      min-age-tier: ADULT
+      wage-amount: 100.0
+      wage-interval-minutes: 30
+
+    # ── Tier 4: corporate/financial, Adult only ─────────────────────────────────
+    # Task bonus (cut of /corp dividend payouts) not wired yet - passive wage only for now.
+    executive:
+      display-name: "&6&lCorporate Executive"
+      min-age-tier: ADULT
+      wage-amount: 250.0
+      wage-interval-minutes: 30
+
+    # Task bonus (cut of StockMarket broker fees) not wired yet - passive wage only for now.
+    stockbroker:
+      display-name: "&a&lStockbroker"
+      min-age-tier: ADULT
+      wage-amount: 200.0
+      wage-interval-minutes: 30
+
+    # Task bonus (rent from Municipal land claims) not wired yet - passive wage only for now.
+    landlord:
+      display-name: "&e&lReal Estate Developer"
+      min-age-tier: ADULT
+      wage-amount: 180.0
+      wage-interval-minutes: 30
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# AICHAT - in-game AI chat assistant, powered by Anthropic Claude/Gemini/Ollama.
+# ═══════════════════════════════════════════════════════════════════════════════
+aichat:
+  # Options: "anthropic", "gemini", "ollama" - see the original ai-chat module's config.yml comments
+  # (kept in git history) for the full provider writeup.
+  provider: "anthropic"
+
+  # Required for anthropic and gemini. Not needed for ollama unless you've put your own auth in front
+  # of it (sent as a Bearer token if set).
+  api-key: ""
+
+  # Only used when provider is "ollama": the base URL of your Ollama server.
+  ollama-base-url: "http://localhost:11434"
+
+  # The model name for whichever provider you picked above.
+  model: "claude-sonnet-5"
+
+  # The assistant's name, shown as a chat prefix (e.g. "Astra: Hey there!").
+  assistant-name: "Astra"
+
+  # The assistant's personality/instructions, sent as the system prompt on every request. It can call
+  # a few read-only tools to answer real questions about the stock market, the auction house, and
+  # server commands - it only ever sees what those tools return, never player balances or private data.
+  system-prompt: "You are Astra, a friendly and helpful AI assistant for this Minecraft server. Keep replies concise and conversational, suitable for in-game chat. When asked about stock prices, the auction house, or server commands, use the tools available to you rather than guessing - if a tool has no data, say so honestly instead of making something up. Never claim to know a player's balance, inventory, or private information, since you have no access to that."
+
+  # Max tokens the model is allowed to generate per reply.
+  max-tokens: 400
+
+  # How many back-and-forth exchanges to remember per player before the oldest is dropped. In-memory
+  # only, resets on restart.
+  memory-limit: 6
+
+  # Minimum seconds a player must wait between messages.
+  cooldown-seconds: 3
+
+  # Max characters allowed in a single player message.
+  max-message-length: 400
