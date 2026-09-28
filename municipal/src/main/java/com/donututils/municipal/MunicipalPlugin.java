@@ -13,6 +13,8 @@ import com.donututils.municipal.db.DatabaseManager;
 import com.donututils.municipal.economy.VaultEconomyBridge;
 import com.donututils.municipal.jail.JailListener;
 import com.donututils.municipal.jail.JailManager;
+import com.donututils.municipal.location.LocationManager;
+import com.donututils.municipal.command.LocationCommand;
 import com.donututils.municipal.permit.PermitEnforcementListener;
 import com.donututils.municipal.permit.PermitManager;
 import org.bukkit.command.CommandExecutor;
@@ -44,6 +46,7 @@ public final class MunicipalPlugin extends JavaPlugin {
     private CourtManager courtManager;
     private JailManager jailManager;
     private ClaimManager claimManager;
+    private LocationManager locationManager;
 
     private volatile MunicipalConfig config;
     private BukkitTask releaseTask;
@@ -89,9 +92,10 @@ public final class MunicipalPlugin extends JavaPlugin {
 
     private void finishEnable() {
         databaseManager = new DatabaseManager(getDataFolder(), getLogger());
+        locationManager = new LocationManager(this, databaseManager);
         permitManager = new PermitManager(this, databaseManager, economy, this::getMunicipalConfig);
         courtManager = new CourtManager(this, databaseManager);
-        jailManager = new JailManager(this, databaseManager, this::getMunicipalConfig);
+        jailManager = new JailManager(this, databaseManager, this::getMunicipalConfig, locationManager);
         claimManager = new ClaimManager(this, databaseManager, this::getMunicipalConfig);
 
         getServer().getPluginManager().registerEvents(new PermitEnforcementListener(this::getMunicipalConfig), this);
@@ -103,6 +107,7 @@ public final class MunicipalPlugin extends JavaPlugin {
         registerCommand("police", new PoliceCommand(this, courtManager));
         registerCommand("court", new CourtCommand(this, courtManager, jailManager, this::getMunicipalConfig));
         registerCommand("municipal", new ClaimCommand(this, claimManager, economy));
+        registerCommand("location", new LocationCommand(locationManager));
 
         startTasks();
 

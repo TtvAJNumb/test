@@ -28,6 +28,11 @@ commands:
     usage: /municipal [claim|unclaim|map|reload]
     permission: municipal.command.claim
     permission-message: "&cYou do not have permission to use /municipal."
+  location:
+    description: Define named point warps or cuboid regions (jail, courthouse, market, etc) and teleport to them.
+    usage: /location [pos1|pos2|save <name>|remove <name>|list|info <name>|tp <name>]
+    permission: municipal.command.location
+    permission-message: "&cYou do not have permission to use /location."
 permissions:
   municipal.command.permit:
     description: Allows buying and checking permits
@@ -35,6 +40,12 @@ permissions:
   municipal.command.claim:
     description: Allows claiming/unclaiming land and viewing the claim map
     default: true
+  municipal.command.location:
+    description: Allows teleporting to and listing saved locations
+    default: true
+  municipal.location.admin:
+    description: Allows defining, saving, and removing named locations
+    default: op
   municipal.police:
     description: Allows arresting players
     default: op

@@ -97,6 +97,20 @@ public final class DatabaseManager {
                     missed_ticks INTEGER NOT NULL DEFAULT 0,
                     last_tick_at INTEGER
                 );
+                """,
+                """
+                CREATE TABLE IF NOT EXISTS locations (
+                    name TEXT PRIMARY KEY,
+                    world TEXT NOT NULL,
+                    x REAL NOT NULL,
+                    y REAL NOT NULL,
+                    z REAL NOT NULL,
+                    yaw REAL NOT NULL DEFAULT 0,
+                    pitch REAL NOT NULL DEFAULT 0,
+                    has_bounds INTEGER NOT NULL DEFAULT 0,
+                    min_x REAL, min_y REAL, min_z REAL,
+                    max_x REAL, max_y REAL, max_z REAL
+                );
                 """
         };
 

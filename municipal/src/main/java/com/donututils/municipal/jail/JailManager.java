@@ -2,6 +2,8 @@ package com.donututils.municipal.jail;
 
 import com.donututils.municipal.config.MunicipalConfig;
 import com.donututils.municipal.db.DatabaseManager;
+import com.donututils.municipal.location.LocationManager;
+import com.donututils.municipal.location.NamedLocation;
 import com.donututils.municipal.model.JailRecord;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
@@ -29,13 +31,16 @@ public final class JailManager {
     private final Plugin plugin;
     private final DatabaseManager database;
     private final Supplier<MunicipalConfig> configSupplier;
+    private final LocationManager locationManager;
 
     private final Map<UUID, JailRecord> jailed = new ConcurrentHashMap<>();
 
-    public JailManager(Plugin plugin, DatabaseManager database, Supplier<MunicipalConfig> configSupplier) {
+    public JailManager(Plugin plugin, DatabaseManager database, Supplier<MunicipalConfig> configSupplier,
+                        LocationManager locationManager) {
         this.plugin = plugin;
         this.database = database;
         this.configSupplier = configSupplier;
+        this.locationManager = locationManager;
         loadAll();
     }
 
@@ -102,6 +107,15 @@ public final class JailManager {
     }
 
     private void teleportToJail(Player player) {
+        NamedLocation named = locationManager.get("jail");
+        if (named != null) {
+            Location target = named.toLocation();
+            if (target != null) {
+                player.teleport(target);
+                return;
+            }
+        }
+
         MunicipalConfig config = configSupplier.get();
         World world = Bukkit.getWorld(config.jailWorld());
         if (world == null) {
@@ -111,9 +125,27 @@ public final class JailManager {
         player.teleport(new Location(world, config.jailX(), config.jailY(), config.jailZ()));
     }
 
-    /** Called from a repeating main-thread task: snaps anyone who's wandered too far from the jail
-     * point back to it. */
+    /** Called from a repeating main-thread task: snaps anyone who's wandered outside the jail area
+     * back to its teleport point. If a "jail" location has been defined with {@code /location
+     * pos1}/{@code pos2}/{@code save jail}, its exact cuboid bounds are enforced; otherwise this
+     * falls back to the old point+radius config. */
     public void enforceRadius(Player player) {
+        NamedLocation named = locationManager.get("jail");
+        if (named != null) {
+            Location target = named.toLocation();
+            if (target == null) {
+                return;
+            }
+            if (named.hasBounds()) {
+                if (!named.bounds().contains(player.getLocation())) {
+                    player.teleport(target);
+                }
+            } else if (player.getLocation().getWorld() != target.getWorld() || player.getLocation().distance(target) > configSupplier.get().jailRadius()) {
+                player.teleport(target);
+            }
+            return;
+        }
+
         MunicipalConfig config = configSupplier.get();
         World jailWorld = Bukkit.getWorld(config.jailWorld());
         if (jailWorld == null) {
