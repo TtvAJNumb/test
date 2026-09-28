@@ -41,3 +41,15 @@ jail:
 court:
   # Hard cap on a single sentence, regardless of what a judge requests.
   max-sentence-minutes: 10080
+
+claims:
+  # Grid-based land claiming, built entirely inside Municipal - one claim covers one real 16x16
+  # vanilla chunk. Claiming requires holding the building permit (see permits.building above).
+  claim-fee: 500.0
+  # Property tax billed per claimed chunk, per tax tick, deducted straight from the owner's Vault
+  # balance. A player owning 10 chunks pays 10x this amount each tick.
+  tax-per-chunk: 50.0
+  tax-tick-hours: 24
+  # How many consecutive missed tax payments before a claim is foreclosed (all of that owner's
+  # chunks are released back to the public domain). At the default 24h tick, 14 means "two weeks."
+  foreclosure-after-missed-ticks: 14

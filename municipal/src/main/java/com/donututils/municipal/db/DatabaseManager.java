@@ -80,6 +80,23 @@ public final class DatabaseManager {
                     purchased_at INTEGER NOT NULL,
                     PRIMARY KEY (player_id, permit_type)
                 );
+                """,
+                """
+                CREATE TABLE IF NOT EXISTS claims (
+                    world TEXT NOT NULL,
+                    chunk_x INTEGER NOT NULL,
+                    chunk_z INTEGER NOT NULL,
+                    owner_id TEXT NOT NULL,
+                    claimed_at INTEGER NOT NULL,
+                    PRIMARY KEY (world, chunk_x, chunk_z)
+                );
+                """,
+                """
+                CREATE TABLE IF NOT EXISTS claim_tax_status (
+                    owner_id TEXT PRIMARY KEY,
+                    missed_ticks INTEGER NOT NULL DEFAULT 0,
+                    last_tick_at INTEGER
+                );
                 """
         };
 

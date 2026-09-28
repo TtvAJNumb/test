@@ -16,7 +16,11 @@ public record MunicipalConfig(
         double jailRadius,
         Set<String> allowedCommandsWhileJailed,
         int releaseCheckSeconds,
-        int maxSentenceMinutes
+        int maxSentenceMinutes,
+        double claimFee,
+        double taxPerChunk,
+        int taxTickHours,
+        int foreclosureAfterMissedTicks
 ) {
 
     public PermitDefinition permit(String type) {

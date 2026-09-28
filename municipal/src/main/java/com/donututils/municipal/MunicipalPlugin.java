@@ -1,5 +1,8 @@
 package com.donututils.municipal;
 
+import com.donututils.municipal.claim.ClaimManager;
+import com.donututils.municipal.claim.ClaimProtectionListener;
+import com.donututils.municipal.command.ClaimCommand;
 import com.donututils.municipal.command.CourtCommand;
 import com.donututils.municipal.command.PermitCommand;
 import com.donututils.municipal.command.PoliceCommand;
@@ -40,9 +43,11 @@ public final class MunicipalPlugin extends JavaPlugin {
     private PermitManager permitManager;
     private CourtManager courtManager;
     private JailManager jailManager;
+    private ClaimManager claimManager;
 
     private volatile MunicipalConfig config;
     private BukkitTask releaseTask;
+    private BukkitTask propertyTaxTask;
     private int vaultRetryAttempts;
 
     @Override
@@ -87,14 +92,17 @@ public final class MunicipalPlugin extends JavaPlugin {
         permitManager = new PermitManager(this, databaseManager, economy, this::getMunicipalConfig);
         courtManager = new CourtManager(this, databaseManager);
         jailManager = new JailManager(this, databaseManager, this::getMunicipalConfig);
+        claimManager = new ClaimManager(this, databaseManager, this::getMunicipalConfig);
 
         getServer().getPluginManager().registerEvents(new PermitEnforcementListener(this::getMunicipalConfig), this);
         getServer().getPluginManager().registerEvents(new JailListener(jailManager, this::getMunicipalConfig), this);
         getServer().getPluginManager().registerEvents(new PermitJoinListener(), this);
+        getServer().getPluginManager().registerEvents(new ClaimProtectionListener(claimManager), this);
 
         registerCommand("permit", new PermitCommand(permitManager));
         registerCommand("police", new PoliceCommand(this, courtManager));
         registerCommand("court", new CourtCommand(this, courtManager, jailManager, this::getMunicipalConfig));
+        registerCommand("municipal", new ClaimCommand(this, claimManager, economy));
 
         startTasks();
 
@@ -119,14 +127,22 @@ public final class MunicipalPlugin extends JavaPlugin {
     }
 
     private void startTasks() {
-        long ticks = Math.max(20L, config.releaseCheckSeconds() * 20L);
-        releaseTask = getServer().getScheduler().runTaskTimer(this, jailManager::tickReleases, ticks, ticks);
+        long releaseTicks = Math.max(20L, config.releaseCheckSeconds() * 20L);
+        releaseTask = getServer().getScheduler().runTaskTimer(this, jailManager::tickReleases, releaseTicks, releaseTicks);
+
+        long taxTicks = Math.max(20L, config.taxTickHours() * 3600L * 20L);
+        propertyTaxTask = getServer().getScheduler().runTaskTimerAsynchronously(this,
+                () -> claimManager.tickPropertyTax(economy), taxTicks, taxTicks);
     }
 
     private void stopTasks() {
         if (releaseTask != null) {
             releaseTask.cancel();
             releaseTask = null;
+        }
+        if (propertyTaxTask != null) {
+            propertyTaxTask.cancel();
+            propertyTaxTask = null;
         }
     }
 
@@ -171,7 +187,11 @@ public final class MunicipalPlugin extends JavaPlugin {
                 cfg.getDouble("jail.radius", 10.0),
                 allowedCommands,
                 cfg.getInt("jail.release-check-seconds", 30),
-                cfg.getInt("court.max-sentence-minutes", 10080)
+                cfg.getInt("court.max-sentence-minutes", 10080),
+                cfg.getDouble("claims.claim-fee", 500.0),
+                cfg.getDouble("claims.tax-per-chunk", 50.0),
+                cfg.getInt("claims.tax-tick-hours", 24),
+                cfg.getInt("claims.foreclosure-after-missed-ticks", 14)
         );
     }
 

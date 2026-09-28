@@ -3,7 +3,7 @@ version: ${project.version}
 main: com.donututils.municipal.MunicipalPlugin
 api-version: "1.21"
 folia-supported: false
-description: Law enforcement, courts, jail, and business/building/weapon permits - backed by its own SQLite database. Uses Vault for permit costs, so it works with Ledger or any other Vault-compatible economy.
+description: Law enforcement, courts, jail, land claims/property tax, and business/building/weapon permits - backed by its own SQLite database. Uses Vault for costs, so it works with Ledger or any other Vault-compatible economy.
 authors: [donututils]
 depend:
   - Vault
@@ -23,9 +23,17 @@ commands:
     usage: /court [sentence <caseId> <minutes> <reason>|dismiss <caseId> [reason]|release <player>|record <player>]
     permission: municipal.judge
     permission-message: "&cYou do not have permission to use /court."
+  municipal:
+    description: Claim or unclaim the chunk you're standing in, view nearby claims, or reload config.
+    usage: /municipal [claim|unclaim|map|reload]
+    permission: municipal.command.claim
+    permission-message: "&cYou do not have permission to use /municipal."
 permissions:
   municipal.command.permit:
     description: Allows buying and checking permits
+    default: true
+  municipal.command.claim:
+    description: Allows claiming/unclaiming land and viewing the claim map
     default: true
   municipal.police:
     description: Allows arresting players
@@ -34,5 +42,8 @@ permissions:
     description: Allows sentencing, dismissing, and releasing court cases
     default: op
   municipal.bypass:
-    description: Skips building/weapon permit enforcement
+    description: Skips building/weapon permit enforcement and land-claim protection
+    default: op
+  municipal.admin:
+    description: Allows reloading Municipal's config
     default: op
