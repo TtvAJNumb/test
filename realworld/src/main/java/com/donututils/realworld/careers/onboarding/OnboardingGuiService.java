@@ -17,18 +17,33 @@ import java.lang.reflect.Method;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Supplier;
 
 /** Builds and opens the two onboarding menus - both are plain chest-style inventories using
- * {@link CareersMenuHolder} so a single click listener can drive either screen. */
+ * {@link CareersMenuHolder} so a single click listener can drive either screen. Picking is
+ * mandatory: {@link OnboardingListener}'s close handler reopens whichever menu is still needed if a
+ * player dismisses it (Escape, hotbar swap, etc.) without choosing anything - see
+ * {@link #markInternalTransition} for how a deliberate age-menu-to-job-menu handoff is told apart
+ * from the player actually walking away. */
 public final class OnboardingGuiService {
 
     private final CitizenManager citizenManager;
     private final Supplier<CareersConfig> configSupplier;
+    private final Set<UUID> internalTransition = ConcurrentHashMap.newKeySet();
 
     public OnboardingGuiService(CitizenManager citizenManager, Supplier<CareersConfig> configSupplier) {
         this.citizenManager = citizenManager;
         this.configSupplier = configSupplier;
+    }
+
+    /** Called by {@link OnboardingListener} when a menu closes - true (and consumes the flag) if this
+     * close was the plugin itself swapping from the age menu straight to the job menu, false if the
+     * player actually dismissed a menu on their own and the appropriate one should be forced back open. */
+    public boolean consumeInternalTransition(UUID playerId) {
+        return internalTransition.remove(playerId);
     }
 
     public void openAgeMenu(Player player) {
@@ -40,6 +55,7 @@ public final class OnboardingGuiService {
         holder.onSlot(3, () -> {
             citizenManager.setAgeTier(player.getUniqueId(), AgeTier.MINOR);
             player.sendMessage(color("&aYou're now registered as a &bMinor&a."));
+            internalTransition.add(player.getUniqueId());
             player.closeInventory();
             openJobMenu(player);
         });
@@ -48,6 +64,7 @@ public final class OnboardingGuiService {
         holder.onSlot(5, () -> {
             citizenManager.setAgeTier(player.getUniqueId(), AgeTier.ADULT);
             player.sendMessage(color("&aYou're now registered as an &aAdult&a."));
+            internalTransition.add(player.getUniqueId());
             player.closeInventory();
             openJobMenu(player);
         });
