@@ -3,7 +3,7 @@ version: ${project.version}
 main: com.donututils.donutrep.DonutREPPlugin
 api-version: "1.21"
 folia-supported: false
-description: An original SMP economy/society plugin - a native Vault Money economy, a dual-currency (Money/Shards) categorized item shop, a real player-to-player auction house, social (chat/msg/ignore), homes/warps, AFK, random-teleport, and dueling - plus Teams, Crates, staff tools, and Discord watchdog/alert addons folded in. Registers itself as the server's Vault economy provider - no other economy plugin required. Vault itself must still be installed.
+description: An original SMP economy/society plugin - a native Vault Money economy, a /shop catalog matching real UltimateDonutSmp's categories/items/prices, plus Teams, Crates, staff tools, and Discord watchdog/alert addons folded in. Registers itself as the server's Vault economy provider - no other economy plugin required. Vault itself must still be installed.
 authors: [donututils]
 depend:
   - Vault
@@ -29,293 +29,17 @@ commands:
     usage: /shards [player]
     permission: market.command.shards
     permission-message: "&cYou do not have permission to use /shards."
-  balance:
-    description: Check your Money balance, or another player's.
-    usage: /balance [player]
-    aliases: [bal, money]
-    permission: economy.command.balance
-    permission-message: "&cYou do not have permission to use /balance."
-  addmoney:
-    description: Add Money to a player.
-    usage: /addmoney <player> <amount>
-    permission: economy.admin
-    permission-message: "&cYou do not have permission to use /addmoney."
-  removemoney:
-    description: Remove Money from a player.
-    usage: /removemoney <player> <amount>
-    permission: economy.admin
-    permission-message: "&cYou do not have permission to use /removemoney."
-  setmoney:
-    description: Set a player's Money balance exactly.
-    usage: /setmoney <player> <amount>
-    permission: economy.admin
-    permission-message: "&cYou do not have permission to use /setmoney."
-  shardpay:
-    description: Send Shards to another online player.
-    usage: /shardpay <player> <amount>
-    permission: economy.command.pay
-    permission-message: "&cYou do not have permission to use /shardpay."
-  setshards:
-    description: Set a player's Shards balance exactly.
-    usage: /setshards <player> <amount>
-    permission: economy.admin
-    permission-message: "&cYou do not have permission to use /setshards."
-  # --- Market (dual-currency categorized shop) ---
+  # --- Market (/shop, matches real UDS shop.yml) ---
   shop:
-    description: Open the categorized item shop (Overworld/Nether/End/Shard Boutique), or sell from chat.
-    usage: /shop [sell hand]
+    description: Open the shop (End/Nether/Gear/Food/Shard/Crate Keys), matching real UltimateDonutSmp.
+    usage: /shop
     permission: market.command.shop
     permission-message: "&cYou do not have permission to use /shop."
   shopadmin:
-    description: Administer the shop and Shards currency.
-    usage: /shopadmin <reload|addshards <player> <amount>|setmultiplier <category> <value>> ...
+    description: Administer the shop.
+    usage: /shopadmin reload
     permission: market.admin
     permission-message: "&cYou do not have permission to manage the shop."
-  worth:
-    description: Check the current buy/sell price of an item.
-    usage: /worth [material]
-    permission: market.command.shop
-    permission-message: "&cYou do not have permission to use /worth."
-  sell:
-    description: Open the sell/shop menu.
-    usage: /sell
-    permission: market.command.shop
-    permission-message: "&cYou do not have permission to use /sell."
-  sellhand:
-    description: Sell the item in your hand.
-    usage: /sellhand [amount]
-    permission: market.command.shop
-    permission-message: "&cYou do not have permission to use /sellhand."
-  sellall:
-    description: Sell every sellable item in your inventory.
-    usage: /sellall
-    permission: market.command.shop
-    permission-message: "&cYou do not have permission to use /sellall."
-  sellmulti:
-    description: Sell a specific amount of a specific material from your inventory.
-    usage: /sellmulti <material> <amount>
-    permission: market.command.shop
-    permission-message: "&cYou do not have permission to use /sellmulti."
-  sellmultiplier:
-    description: View, or (admin) set, the Market's sell-back multiplier.
-    usage: /sellmultiplier [value]
-    permission: market.command.shop
-    permission-message: "&cYou do not have permission to use /sellmultiplier."
-  sellprogress:
-    description: View lifetime selling stats - items sold and Money earned.
-    usage: /sellprogress [player]
-    permission: market.command.shop
-    permission-message: "&cYou do not have permission to use /sellprogress."
-  sellhistory:
-    description: View your most recent sell transactions.
-    usage: /sellhistory
-    permission: market.command.shop
-    permission-message: "&cYou do not have permission to use /sellhistory."
-  topsell:
-    description: View the top sellers leaderboard.
-    usage: /topsell
-    permission: market.command.shop
-    permission-message: "&cYou do not have permission to use /topsell."
-  # --- Auction House (real player-to-player sell marketplace) ---
-  auctionhouse:
-    description: List, browse, and buy player-listed items on the Auction House.
-    usage: /auctionhouse <sell <price>|list [page]|buy <id>|my|claims|cancel <id>|reload>
-    aliases: [ah]
-    permission: auctionhouse.command.auctionhouse
-    permission-message: "&cYou do not have permission to use /auctionhouse."
-  shopedit:
-    description: Staff moderation for the Auction House - force-remove a listing.
-    usage: /shopedit remove <id>
-    permission: auctionhouse.admin
-    permission-message: "&cYou do not have permission to use /shopedit."
-  # --- Orders board (buy requests other players can fulfill) ---
-  orders:
-    description: Post buy requests other players can fulfill, or fulfill/collect/cancel one.
-    usage: /orders [create <price> <amount>|fulfill <id>|my|collect|cancel <id>|reload]
-    permission: orders.command.orders
-    permission-message: "&cYou do not have permission to use /orders."
-  # --- Social ---
-  chat:
-    description: Staff administration of global chat - mute/unmute/delay/clear.
-    usage: /chat <help|mute|unmute|delay <seconds>|clear>
-    permission: social.command.chat
-    permission-message: "&cYou do not have permission to use /chat."
-  msg:
-    description: Send a private message to another online player.
-    usage: /msg <player> <message>
-    permission: social.command.msg
-    permission-message: "&cYou do not have permission to use /msg."
-  pm:
-    description: Alias for /msg - send a private message to another online player.
-    usage: /pm <player> <message>
-    permission: social.command.msg
-    permission-message: "&cYou do not have permission to use /pm."
-  reply:
-    description: Reply to the last player who messaged you (or you messaged).
-    usage: /reply <message>
-    permission: social.command.msg
-    permission-message: "&cYou do not have permission to use /reply."
-  ignore:
-    description: Stop receiving private messages and chat lines from a player.
-    usage: /ignore <player>
-    permission: social.command.ignore
-    permission-message: "&cYou do not have permission to use /ignore."
-  unignore:
-    description: Undo a previous /ignore.
-    usage: /unignore <player>
-    permission: social.command.ignore
-    permission-message: "&cYou do not have permission to use /unignore."
-  # --- Homes / Warps ---
-  home:
-    description: Teleport to one of your named homes.
-    usage: /home [name]
-    permission: homes.command.home
-    permission-message: "&cYou do not have permission to use /home."
-  homes:
-    description: List every home you've set.
-    usage: /homes
-    permission: homes.command.home
-    permission-message: "&cYou do not have permission to use /homes."
-  sethome:
-    description: Set (or update) a named home at your current location.
-    usage: /sethome [name]
-    permission: homes.command.home
-    permission-message: "&cYou do not have permission to use /sethome."
-  delhome:
-    description: Delete a named home.
-    usage: /delhome <name>
-    permission: homes.command.home
-    permission-message: "&cYou do not have permission to use /delhome."
-  renamehome:
-    description: Rename one of your homes.
-    usage: /renamehome <old> <new>
-    permission: homes.command.home
-    permission-message: "&cYou do not have permission to use /renamehome."
-  spawn:
-    description: Teleport to the server's spawn point.
-    usage: /spawn
-    permission: homes.command.spawn
-    permission-message: "&cYou do not have permission to use /spawn."
-  setspawn:
-    description: Set the server's spawn point to your current location.
-    usage: /setspawn
-    permission: homes.admin
-    permission-message: "&cYou do not have permission to use /setspawn."
-  # --- AFK ---
-  afk:
-    description: Toggle your own AFK status.
-    usage: /afk
-    permission: afk.command.afk
-    permission-message: "&cYou do not have permission to use /afk."
-  setafk:
-    description: Force another player's AFK status on or off.
-    usage: /setafk <player> [on|off]
-    permission: afk.admin
-    permission-message: "&cYou do not have permission to use /setafk."
-  # --- Travel ---
-  rtp:
-    description: Teleport to a random nearby location.
-    usage: /rtp
-    permission: travel.command.rtp
-    permission-message: "&cYou do not have permission to use /rtp."
-  rtpq:
-    description: Join the random-teleport queue instead of searching immediately.
-    usage: /rtpq
-    permission: travel.command.rtp
-    permission-message: "&cYou do not have permission to use /rtpq."
-  teleport:
-    description: Teleport a player to a target (or to you).
-    usage: /teleport <player> [target]
-    permission: travel.admin
-    permission-message: "&cYou do not have permission to use /teleport."
-  randomteleport:
-    description: Force another player through a random teleport.
-    usage: /randomteleport <player>
-    permission: travel.admin
-    permission-message: "&cYou do not have permission to use /randomteleport."
-  findplayer:
-    description: Show a player's current world and coordinates.
-    usage: /findplayer <player>
-    permission: travel.admin
-    permission-message: "&cYou do not have permission to use /findplayer."
-  # --- Warps / Portals ---
-  warp:
-    description: Teleport to a named warp, or list every warp.
-    usage: /warp [name]
-    permission: warps.command.warp
-    permission-message: "&cYou do not have permission to use /warp."
-  setwarp:
-    description: Create or update a warp at your current location.
-    usage: /setwarp <name>
-    permission: warps.admin
-    permission-message: "&cYou do not have permission to use /setwarp."
-  delwarp:
-    description: Delete a warp.
-    usage: /delwarp <name>
-    permission: warps.admin
-    permission-message: "&cYou do not have permission to use /delwarp."
-  warpmanager:
-    description: Admin overview of every warp, with coordinates.
-    usage: /warpmanager [delete <name>]
-    permission: warps.admin
-    permission-message: "&cYou do not have permission to use /warpmanager."
-  portalmanager:
-    description: Define physical portal regions that teleport players to a warp on contact.
-    usage: /portalmanager <pos1|pos2|create <warp>|delete <id>|list>
-    permission: warps.admin
-    permission-message: "&cYou do not have permission to use /portalmanager."
-  # --- TPA ---
-  tpa:
-    description: Request to teleport to another player.
-    usage: /tpa <player>
-    permission: tpa.command.tpa
-    permission-message: "&cYou do not have permission to use /tpa."
-  tpahere:
-    description: Request that another player teleport to you.
-    usage: /tpahere <player>
-    permission: tpa.command.tpa
-    permission-message: "&cYou do not have permission to use /tpahere."
-  tpaccept:
-    description: Accept a pending teleport request.
-    usage: /tpaccept [player]
-    permission: tpa.command.tpa
-    permission-message: "&cYou do not have permission to use /tpaccept."
-  tpadeny:
-    description: Deny a pending teleport request.
-    usage: /tpadeny [player]
-    permission: tpa.command.tpa
-    permission-message: "&cYou do not have permission to use /tpadeny."
-  tpacancel:
-    description: Cancel every teleport request you've sent.
-    usage: /tpacancel
-    permission: tpa.command.tpa
-    permission-message: "&cYou do not have permission to use /tpacancel."
-  tpauto:
-    description: Toggle auto-accepting incoming /tpa requests.
-    usage: /tpauto
-    permission: tpa.command.tpa
-    permission-message: "&cYou do not have permission to use /tpauto."
-  tpahereauto:
-    description: Toggle auto-accepting incoming /tpahere requests.
-    usage: /tpahereauto
-    permission: tpa.command.tpa
-    permission-message: "&cYou do not have permission to use /tpahereauto."
-  # --- PvP ---
-  duel:
-    description: Challenge a player to a 1v1 duel, or accept/decline a pending challenge.
-    usage: /duel <player|accept|decline>
-    permission: pvp.command.duel
-    permission-message: "&cYou do not have permission to use /duel."
-  queue:
-    description: Join the random-opponent duel matchmaking queue.
-    usage: /queue
-    permission: pvp.command.duel
-    permission-message: "&cYou do not have permission to use /queue."
-  leave:
-    description: Forfeit your active duel, or leave the matchmaking queue.
-    usage: /leave
-    permission: pvp.command.duel
-    permission-message: "&cYou do not have permission to use /leave."
   # --- Teams ---
   team:
     description: Create, disband, or manage a team.
@@ -356,11 +80,6 @@ commands:
     usage: /marketwatch <reload|status>
     permission: marketwatch.admin
     permission-message: "&cYou do not have permission to use /marketwatch."
-  ahstats:
-    description: Shows real Auction House activity - the highest-priced active listings.
-    usage: /ahstats
-    permission: marketwatch.command.ahstats
-    permission-message: "&cYou do not have permission to use /ahstats."
   # --- PunishmentHistoryGUI ---
   punishhistory:
     description: View a player's staff notes.
@@ -386,75 +105,18 @@ permissions:
   economy.command.pay:
     description: Allows sending Money to another player
     default: true
-  economy.command.balance:
-    description: Allows checking your own or another player's Money balance
-    default: true
   economy.admin:
     description: Allows administering the economy and granting/removing Shards
     default: op
   market.command.shop:
-    description: Allows using the categorized item shop
+    description: Allows using the shop
     default: true
   market.command.shards:
     description: Allows checking Shards balances
     default: true
   market.admin:
-    description: Allows administering the shop and granting Shards
+    description: Allows administering the shop
     default: op
-  auctionhouse.command.auctionhouse:
-    description: Allows listing, browsing, and buying on the Auction House
-    default: true
-  auctionhouse.admin:
-    description: Allows force-removing any Auction House listing
-    default: op
-  orders.command.orders:
-    description: Allows posting, fulfilling, and collecting on the Orders board
-    default: true
-  social.command.chat:
-    description: Allows administering global chat (mute/unmute/delay/clear)
-    default: op
-  social.chat.bypass:
-    description: Exempts a player from global chat mute/slow-mode
-    default: op
-  social.command.msg:
-    description: Allows sending and replying to private messages
-    default: true
-  social.command.ignore:
-    description: Allows ignoring/unignoring other players
-    default: true
-  homes.command.home:
-    description: Allows setting and using named homes
-    default: true
-  homes.command.spawn:
-    description: Allows teleporting to spawn
-    default: true
-  homes.admin:
-    description: Allows setting the server's spawn point
-    default: op
-  afk.command.afk:
-    description: Allows toggling your own AFK status
-    default: true
-  afk.admin:
-    description: Allows forcing another player's AFK status
-    default: op
-  travel.command.rtp:
-    description: Allows random-teleporting
-    default: true
-  travel.admin:
-    description: Allows /teleport, /randomteleport, and /findplayer
-    default: op
-  warps.command.warp:
-    description: Allows teleporting to warps
-    default: true
-  warps.admin:
-    description: Allows creating, deleting, and managing warps and portals
-    default: op
-  tpa.command.tpa:
-    description: Allows sending and answering teleport requests
-    default: true
-  pvp.command.duel:
-    description: Allows dueling, queueing, and leaving
-    default: true
   teams.command.team:
     description: Allows creating and managing a team
     default: true
@@ -485,9 +147,6 @@ permissions:
   marketwatch.admin:
     description: Allows managing MarketWatch's Discord webhook
     default: op
-  marketwatch.command.ahstats:
-    description: Allows checking Auction House stats via /ahstats
-    default: true
   punishmenthistorygui.notes.view:
     description: Allows viewing a player's staff notes
     default: op

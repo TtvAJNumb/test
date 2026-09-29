@@ -1,32 +1,15 @@
 package com.donututils.donutrep.market.config;
 
+import java.util.List;
 import java.util.Map;
 
-/** categoryMultipliers is keyed by {@link MarketCategory#configKey()}'s dimension-level grouping
- * (wood-and-forestry, agriculture-and-crops, ores-and-stone, mob-drops, nether, end) - see config.yml's
- * "market.category-multipliers" comment for why it's per-dimension/group rather than per-leaf-category
- * (tuning 13 near-identical multipliers individually isn't useful; the nether/end leaf categories all
- * share their dimension's single multiplier). */
+/** The whole /shop tree loaded from config.yml's "market" section: the root menu's title and category
+ * buttons (each pointing at one entry in {@code menus}, keyed by category id), plus the per-transaction
+ * quantity cap shared by every item that doesn't set its own {@link ShopItem#maxQuantity()}. */
 public record MarketConfig(
-        String guiTitle,
-        Map<String, Double> categoryMultipliers,
-        double sellBackFraction,
-        int transactionCooldownSeconds,
-        int maxQuantityPerTransaction,
-        Map<String, BoutiqueItem> shardBoutique,
-        int priceTickIntervalSeconds,
-        double buyImpactPercent,
-        double sellImpactPercent,
-        double decayPercentPerTick,
-        double minPriceFactor,
-        double maxPriceFactor
+        String rootTitle,
+        List<ShopCategory> categories,
+        Map<String, ShopMenu> menus,
+        int maxQuantityPerTransaction
 ) {
-    public double multiplierFor(MarketCategory category) {
-        String groupKey = switch (category.dimension()) {
-            case NETHER -> "nether";
-            case END -> "end";
-            case OVERWORLD -> category.configKey();
-        };
-        return categoryMultipliers.getOrDefault(groupKey, 1.0);
-    }
 }

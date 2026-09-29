@@ -24,66 +24,14 @@ public final class HelpTopics {
                 "&6&lShards &7- /shards [player]",
                 "&7Check your (or another player's) Shards balance - the premium currency."
         });
-        t.put("balance", new String[]{
-                "&6&lBalance &7- /balance [player] (aliases: /bal, /money)",
-                "&7Check your (or another player's) Money balance."
-        });
         t.put("shop", new String[]{
-                "&6&lShop &7- /shop [sell hand]",
-                "&7Open the categorized item market (Overworld/Nether/End/Shard Boutique)."
+                "&6&lShop &7- /shop",
+                "&7Open the shop - End, Nether, Gear, Food, Shard, and Crate Keys categories, matching real UltimateDonutSmp."
         });
-        t.put("auctionhouse", new String[]{
-                "&6&lAuction House &7- /auctionhouse <sell <price>|list [page]|buy <id>|my|claims|cancel <id>|reload> (alias: /ah)",
-                "&7The player-to-player marketplace - list your items or buy others'."
+        t.put("shopadmin", new String[]{
+                "&6&lShopAdmin &7- /shopadmin reload",
+                "&7Reload the shop's config.yml entries."
         });
-        t.put("ah", t.get("auctionhouse"));
-        t.put("orders", new String[]{
-                "&6&lOrders &7- /orders [create <price> <amount>|fulfill <id>|my|collect|cancel <id>]",
-                "&7Post a buy request for an item (hold a sample + set price/amount); anyone can fulfill it for the payout."
-        });
-        t.put("shopedit", new String[]{
-                "&6&lShopEdit &7- /shopedit remove <id>",
-                "&7Staff moderation - force-remove any Auction House listing."
-        });
-        t.put("chat", new String[]{
-                "&6&lChat &7- /chat <help|mute|unmute|delay <seconds>|clear>",
-                "&7Staff command - administer global chat (mute-all, slow-mode delay, or clear the screen)."
-        });
-        t.put("msg", new String[]{
-                "&6&lMsg &7- /msg <player> <message> (alias: /pm)",
-                "&7Send a private message. /reply <message> answers your last conversation."
-        });
-        t.put("pm", t.get("msg"));
-        t.put("reply", new String[]{
-                "&6&lReply &7- /reply <message>",
-                "&7Answer whoever last messaged you (or you last messaged)."
-        });
-        t.put("ignore", new String[]{
-                "&6&lIgnore &7- /ignore <player>, /unignore <player>",
-                "&7Stop (or resume) receiving a player's private messages and chat lines."
-        });
-        t.put("home", new String[]{
-                "&6&lHome &7- /home [name], /homes, /sethome [name], /delhome <name>, /renamehome <old> <new>",
-                "&7Set and teleport to named homes."
-        });
-        t.put("homes", t.get("home"));
-        t.put("spawn", new String[]{
-                "&6&lSpawn &7- /spawn (players), /setspawn (admin)",
-                "&7Teleport to the server's spawn point, or set it to your current location."
-        });
-        t.put("afk", new String[]{
-                "&6&lAFK &7- /afk (toggle your own), /setafk <player> [on|off] (staff)",
-                "&7Mark yourself (or, for staff, another player) as away from keyboard."
-        });
-        t.put("rtp", new String[]{
-                "&6&lRTP &7- /rtp, /rtpq",
-                "&7Random-teleport to a nearby location. /rtpq queues you when too many are running."
-        });
-        t.put("duel", new String[]{
-                "&6&lDuel &7- /duel <player|accept|decline>, /queue, /leave",
-                "&7Challenge a player to a 1v1, or /queue for a random opponent. /leave forfeits."
-        });
-        t.put("queue", t.get("duel"));
         t.put("crate", new String[]{
                 "&6&lCrate &7- /crate <bind <id>|unbind|set <player> <crate> <amount>|list|reload>",
                 "&7Bind a chest/barrel/ender chest/shulker box to a crate, or give crate keys."
@@ -97,11 +45,6 @@ public final class HelpTopics {
                 "&6&lSus &7- /sus [player|reload]",
                 "&7Staff panel: browse online players, freeze/unfreeze, view inventory/ender chest."
         });
-        t.put("ah", new String[]{
-                "&6&lAhStats &7- /ahstats",
-                "&7Shows real Auction House activity - the highest-priced active listings."
-        });
-        t.put("ahstats", t.get("ah"));
         t.put("punishhistory", new String[]{
                 "&6&lPunishHistory &7- /punishhistory [player]",
                 "&7View a player's staff notes."

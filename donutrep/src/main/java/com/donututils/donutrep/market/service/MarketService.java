@@ -1,26 +1,24 @@
 package com.donututils.donutrep.market.service;
 
+import com.donututils.donutrep.crates.CrateManager;
 import com.donututils.donutrep.economy.EconomyManager;
 import com.donututils.donutrep.economy.ShardManager;
-import com.donututils.donutrep.market.SellLedger;
-import com.donututils.donutrep.market.config.BoutiqueItem;
-import com.donututils.donutrep.market.config.CatalogEntry;
+import com.donututils.donutrep.market.config.Currency;
 import com.donututils.donutrep.market.config.MarketConfig;
-import com.donututils.donutrep.market.pricing.MarketPricingEngine;
-import org.bukkit.Material;
+import com.donututils.donutrep.market.config.ShopItem;
+import org.bukkit.ChatColor;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 
-import java.util.HashMap;
-import java.util.List;
 import java.util.Locale;
-import java.util.Map;
-import java.util.UUID;
 import java.util.function.Supplier;
 
-/** All buy/sell logic for the Market: the generated vanilla catalog (dynamic Money pricing) and the
- * Shard Boutique (black-market vanilla items, priced in Shards). */
+/** Buy-only logic for the /shop catalog, matching real UDS: no dynamic pricing, no market-side sell-back
+ * (instant-sell was removed per the "keep only the 7 addons" scope cut). A purchase either grants a real
+ * crate key through the existing Crates subsystem (the CRATE-KEYS category), a simplified, clearly
+ * disclosed placeholder spawner item (the SHARD category - no full /spawner system exists yet), or a
+ * plain vanilla ItemStack. */
 public final class MarketService {
 
     public record TradeResult(boolean success, String message) {
@@ -29,197 +27,67 @@ public final class MarketService {
         }
     }
 
-    private final Map<String, CatalogEntry> byMaterial;
-    private final MarketPricingEngine pricing;
     private final EconomyManager economy;
     private final ShardManager shardManager;
+    private final CrateManager crateManager;
     private final Supplier<MarketConfig> configSupplier;
-    private final SellLedger sellLedger;
 
-    private final Map<String, Long> lastTradeAtMillis = new HashMap<>();
-
-    public MarketService(List<CatalogEntry> catalog, MarketPricingEngine pricing, EconomyManager economy,
-                          ShardManager shardManager, Supplier<MarketConfig> configSupplier, SellLedger sellLedger) {
-        this.byMaterial = new HashMap<>();
-        for (CatalogEntry entry : catalog) {
-            byMaterial.put(entry.material().name(), entry);
-        }
-        this.pricing = pricing;
+    public MarketService(EconomyManager economy, ShardManager shardManager, CrateManager crateManager,
+                          Supplier<MarketConfig> configSupplier) {
         this.economy = economy;
         this.shardManager = shardManager;
+        this.crateManager = crateManager;
         this.configSupplier = configSupplier;
-        this.sellLedger = sellLedger;
     }
 
-    public CatalogEntry entryFor(Material material) {
-        return byMaterial.get(material.name());
-    }
+    public TradeResult buy(Player player, ShopItem item, int quantity) {
+        int cap = item.maxQuantity() > 0 ? item.maxQuantity() : configSupplier.get().maxQuantityPerTransaction();
+        quantity = Math.max(1, Math.min(quantity, cap));
+        double total = item.price() * quantity;
 
-    // ── Vanilla catalog (dynamic pricing) ───────────────────────────────────────────────────────
-
-    public TradeResult buy(Player player, CatalogEntry entry, int quantity) {
-        quantity = clampQuantity(quantity);
-        if (!checkCooldown(player.getUniqueId(), entry.material())) {
-            return TradeResult.fail("Please wait before trading that again.");
-        }
-        double price = pricing.buyPrice(entry) * quantity;
-        if (!economy.has(player, price)) {
-            return TradeResult.fail("You can't afford that - costs " + formatMoney(price) + ".");
-        }
-        economy.withdrawPlayer(player, price);
-        player.getInventory().addItem(new ItemStack(entry.material(), quantity));
-        pricing.onBuy(entry.material(), quantity);
-        return new TradeResult(true, "Bought " + quantity + "x " + displayName(entry.material()) + " for " + formatMoney(price) + ".");
-    }
-
-    public TradeResult sell(Player player, Material material, int quantity) {
-        CatalogEntry entry = entryFor(material);
-        if (entry == null) {
-            return TradeResult.fail("The market doesn't buy that.");
-        }
-        quantity = clampQuantity(quantity);
-        if (!hasAtLeast(player, material, quantity)) {
-            return TradeResult.fail("You don't have " + quantity + "x " + displayName(material) + ".");
-        }
-        if (!checkCooldown(player.getUniqueId(), material)) {
-            return TradeResult.fail("Please wait before trading that again.");
-        }
-        removeMaterial(player, material, quantity);
-        double price = pricing.sellPrice(entry) * quantity;
-        economy.depositPlayer(player, price);
-        pricing.onSell(material, quantity);
-        sellLedger.record(player, material, quantity, price);
-        return new TradeResult(true, "Sold " + quantity + "x " + displayName(material) + " for " + formatMoney(price) + ".");
-    }
-
-    /** Sells every sellable item currently in the player's inventory (all catalog entries at once) -
-     * used by /sellall. */
-    public TradeResult sellAllInventory(Player player) {
-        Map<Material, Integer> counts = new HashMap<>();
-        for (ItemStack stack : player.getInventory().getContents()) {
-            if (stack == null) {
-                continue;
+        if (item.currency() == Currency.MONEY) {
+            if (!economy.has(player, total)) {
+                return TradeResult.fail("You can't afford that - costs " + formatMoney(total) + ".");
             }
-            if (byMaterial.containsKey(stack.getType().name())) {
-                counts.merge(stack.getType(), stack.getAmount(), Integer::sum);
+            economy.withdrawPlayer(player, total);
+        } else {
+            if (!shardManager.debit(player.getUniqueId(), (long) total)) {
+                return TradeResult.fail("You don't have " + (long) total + " Shards.");
             }
         }
-        if (counts.isEmpty()) {
-            return TradeResult.fail("You have nothing sellable.");
+
+        if (item.crateId() != null) {
+            crateManager.giveKeys(player, item.crateId(), quantity);
+            return new TradeResult(true, "Bought " + quantity + "x " + item.displayName() + " for "
+                    + formatPrice(item.currency(), total) + ".");
         }
-        double total = 0;
-        int itemTypesSold = 0;
-        for (Map.Entry<Material, Integer> held : counts.entrySet()) {
-            CatalogEntry entry = entryFor(held.getKey());
-            double expected = entry != null ? pricing.sellPrice(entry) * held.getValue() : 0;
-            TradeResult result = sell(player, held.getKey(), held.getValue());
-            if (result.success()) {
-                itemTypesSold++;
-                total += expected;
-            }
+
+        if (item.spawnerMob() != null) {
+            player.getInventory().addItem(placeholderSpawner(item, quantity));
+            player.sendMessage(color("&7(Spawner mob type isn't wired to a real /spawner system yet - "
+                    + "this is a placeholder item until that's built.)"));
+            return new TradeResult(true, "Bought " + quantity + "x " + item.displayName() + " for "
+                    + formatPrice(item.currency(), total) + ".");
         }
-        return new TradeResult(itemTypesSold > 0, itemTypesSold > 0
-                ? "Sold " + itemTypesSold + " item type(s) for a total of " + formatMoney(total) + "."
-                : "Nothing could be sold (cooldown?).");
+
+        player.getInventory().addItem(new ItemStack(item.material(), quantity));
+        return new TradeResult(true, "Bought " + quantity + "x " + item.displayName() + " for "
+                + formatPrice(item.currency(), total) + ".");
     }
 
-    /** Sells every unit of this material the player is currently carrying (used by the shift-click
-     * "sell" action in the catalog GUI) - not a fixed/huge quantity, since that would wrongly fail
-     * for a player holding less than the per-transaction cap. */
-    public TradeResult sellAllHeld(Player player, Material material) {
-        int held = 0;
-        for (ItemStack stack : player.getInventory().getContents()) {
-            if (stack != null && stack.getType() == material) {
-                held += stack.getAmount();
-            }
-        }
-        if (held <= 0) {
-            return TradeResult.fail("You don't have any " + displayName(material) + ".");
-        }
-        return sell(player, material, held);
-    }
-
-    public TradeResult sellHand(Player player) {
-        ItemStack hand = player.getInventory().getItemInMainHand();
-        if (hand == null || hand.getType() == Material.AIR) {
-            return TradeResult.fail("You're not holding anything.");
-        }
-        return sell(player, hand.getType(), hand.getAmount());
-    }
-
-    // ── Shard Boutique ───────────────────────────────────────────────────────────────────────────
-
-    public TradeResult buyBoutiqueItem(Player player, BoutiqueItem item) {
-        if (!shardManager.debit(player.getUniqueId(), item.priceShards())) {
-            return TradeResult.fail("You don't have " + item.priceShards() + " Shards.");
-        }
-        ItemStack result;
-        try {
-            result = new ItemStack(Material.valueOf(item.material().toUpperCase(Locale.ROOT)));
-        } catch (IllegalArgumentException ex) {
-            shardManager.credit(player.getUniqueId(), item.priceShards());
-            return TradeResult.fail("That item isn't configured correctly.");
-        }
-        ItemMeta meta = result.getItemMeta();
+    private ItemStack placeholderSpawner(ShopItem item, int quantity) {
+        ItemStack stack = new ItemStack(item.material(), quantity);
+        ItemMeta meta = stack.getItemMeta();
         if (meta != null) {
-            meta.setDisplayName(org.bukkit.ChatColor.translateAlternateColorCodes('&', item.displayName()));
-            if (item.customModelData() != 0) {
-                meta.setCustomModelData(item.customModelData());
-            }
-            result.setItemMeta(meta);
+            meta.setDisplayName(color("&d" + capitalize(item.spawnerMob()) + " Spawner &7(placeholder)"));
+            meta.setLore(java.util.List.of(color("&7Not yet wired to a real spawner mechanic.")));
+            stack.setItemMeta(meta);
         }
-        player.getInventory().addItem(result);
-        return new TradeResult(true, "Bought " + item.displayName() + " for " + item.priceShards() + " Shards.");
+        return stack;
     }
 
-    // ── Helpers ──────────────────────────────────────────────────────────────────────────────────
-
-    private boolean checkCooldown(UUID playerId, Material material) {
-        String key = playerId + ":" + material.name();
-        long now = System.currentTimeMillis();
-        long cooldownMillis = configSupplier.get().transactionCooldownSeconds() * 1000L;
-        Long last = lastTradeAtMillis.get(key);
-        if (last != null && now - last < cooldownMillis) {
-            return false;
-        }
-        lastTradeAtMillis.put(key, now);
-        return true;
-    }
-
-    private int clampQuantity(int quantity) {
-        return Math.max(1, Math.min(quantity, configSupplier.get().maxQuantityPerTransaction()));
-    }
-
-    private boolean hasAtLeast(Player player, Material material, int quantity) {
-        int total = 0;
-        for (ItemStack stack : player.getInventory().getContents()) {
-            if (stack != null && stack.getType() == material) {
-                total += stack.getAmount();
-                if (total >= quantity) {
-                    return true;
-                }
-            }
-        }
-        return false;
-    }
-
-    private void removeMaterial(Player player, Material material, int quantity) {
-        ItemStack[] contents = player.getInventory().getContents();
-        int remaining = quantity;
-        for (int i = 0; i < contents.length && remaining > 0; i++) {
-            ItemStack stack = contents[i];
-            if (stack == null || stack.getType() != material) {
-                continue;
-            }
-            int take = Math.min(remaining, stack.getAmount());
-            stack.setAmount(stack.getAmount() - take);
-            remaining -= take;
-            player.getInventory().setItem(i, stack.getAmount() <= 0 ? null : stack);
-        }
-    }
-
-    private static String displayName(Material material) {
-        String[] words = material.name().toLowerCase(Locale.ROOT).split("_");
+    private static String capitalize(String mob) {
+        String[] words = mob.toLowerCase(Locale.ROOT).split("_");
         StringBuilder builder = new StringBuilder();
         for (String word : words) {
             if (word.isEmpty()) {
@@ -233,7 +101,15 @@ public final class MarketService {
         return builder.toString();
     }
 
+    private static String formatPrice(Currency currency, double amount) {
+        return currency == Currency.MONEY ? formatMoney(amount) : (long) amount + " Shards";
+    }
+
     private static String formatMoney(double amount) {
         return "$" + String.format(Locale.US, "%,.2f", amount);
+    }
+
+    private static String color(String message) {
+        return ChatColor.translateAlternateColorCodes('&', message);
     }
 }

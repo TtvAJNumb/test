@@ -5,153 +5,162 @@
 # directly with Vault as the server's economy provider - no other economy plugin
 # needed, but Vault itself must still be installed. Shards (the premium currency)
 # share this same subsystem's database but have no separate config - they're just
-# granted via /addshards, /shopadmin addshards, or crate rewards.
+# granted via /addshards, crate rewards, or the Shard-priced /shop items.
 # ═══════════════════════════════════════════════════════════════════════════════
 economy:
   # New players start with this Money balance the first time they join.
   starting-balance: 1000.0
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# MARKET - the dual-currency (Money/Shards) categorized shop. Money is the primary
-# currency; Shards are a premium/milestone currency spent on cosmetic/black-market
-# goods in the Shard Boutique below. The main vanilla item catalog (every obtainable
-# block/item, sorted into Overworld/Nether/End and their sub-categories) is generated
-# automatically from the server's Material list at startup using the rarity tiers
-# below - it is not hand-typed here, since that would be thousands of near-duplicate
-# lines.
+# MARKET - the /shop catalog, rebuilt to match real UltimateDonutSmp's shop.yml:
+# fixed categories (END/NETHER/GEAR/FOOD/SHARD/CRATE-KEYS) at fixed GUI slots, each
+# with a fixed list of items at fixed slots and a static price - no dynamic pricing,
+# no player-to-player selling (that was part of the removed Auction House/instant-
+# sell systems). CRATE-KEYS items grant real keys through the Crates subsystem
+# below; SHARD-menu spawner items are a disclosed placeholder until a real
+# /spawner system is built.
 # ═══════════════════════════════════════════════════════════════════════════════
 market:
   gui:
-    title: "&8Server Market"
-
-  # Every generated catalog item's BASE buy price is base-money-value-per-rarity-tier times
-  # this category's multiplier - "base" because real-time supply/demand pricing (see
-  # dynamic-pricing below) then moves it up or down from there as people actually trade.
-  category-multipliers:
-    wood-and-forestry: 1.0
-    agriculture-and-crops: 1.0
-    ores-and-stone: 1.0
-    mob-drops: 1.2
-    nether: 1.8
-    end: 3.0
-
-  # Fraction of (current, dynamic) buy price a player gets back selling to the market.
-  sell-back-fraction: 0.4
-
-  # Minimum seconds between transactions per player, per item (script/macro sanity check).
-  transaction-cooldown-seconds: 1
-
-  # Hard cap on quantity per single buy/sell transaction.
-  max-quantity-per-transaction: 6400
-
-  # Prices are dynamic, not static - every material has its own live price factor (starting
-  # at 1.0x its base price) that this drives up when players buy it and down when they sell
-  # it. Persisted per-material to market-prices.yml so it survives restarts.
-  dynamic-pricing:
-    tick-interval-seconds: 60
-    buy-impact-percent: 0.05
-    sell-impact-percent: 0.05
-    decay-percent-per-tick: 2.0
-    min-price-factor: 0.25
-    max-price-factor: 4.0
-
-  # Shard Boutique - cosmetic and black-market vanilla items, priced in Shards, not Money.
-  shard-boutique:
-    black_market_totem:
-      display-name: "&5&lBlack-Market Totem of Undying"
-      description: "Rare - sold only for Shards, never for Money."
+    title: "&8shop"
+  max-quantity-per-transaction: 64
+  categories:
+    end:
+      display-name: "&aend"
+      material: END_STONE
+      slot: 11
+    nether:
+      display-name: "&cnether"
+      material: NETHERRACK
+      slot: 12
+    gear:
+      display-name: "&bgear"
       material: TOTEM_OF_UNDYING
-      price-shards: 500
-    black_market_elytra:
-      display-name: "&d&lBlack-Market Elytra"
-      description: "Rare - sold only for Shards, never for Money."
-      material: ELYTRA
-      price-shards: 750
-
-# ═══════════════════════════════════════════════════════════════════════════════
-# AUCTION HOUSE - the real player-to-player marketplace (/orders to sell/browse/buy,
-# /shopedit for staff moderation).
-# ═══════════════════════════════════════════════════════════════════════════════
-auctionhouse:
-  # Hard cap on how many listings one player can have active at once.
-  max-listings-per-player: 10
-
-# ═══════════════════════════════════════════════════════════════════════════════
-# SOCIAL - private messages and ignore lists persist to social.db. Global chat mute/
-# slow-mode delay (see /chat) are runtime-only staff toggles, not config values.
-# ═══════════════════════════════════════════════════════════════════════════════
-
-# ═══════════════════════════════════════════════════════════════════════════════
-# HOMES - per-player named homes and the single server-wide spawn point.
-# ═══════════════════════════════════════════════════════════════════════════════
-homes:
-  max-homes-per-player: 3
-
-# ═══════════════════════════════════════════════════════════════════════════════
-# AFK - manual (/afk) and automatic idle-timeout AFK status.
-# ═══════════════════════════════════════════════════════════════════════════════
-afk:
-  # How long (seconds) a player can be idle before being automatically marked AFK.
-  # Set to 0 to disable automatic AFK (manual /afk still works).
-  timeout-seconds: 300
-
-  # Optional AFK lounge - going AFK teleports the player here, returning teleports them back.
-  # Disabled by default. Set with /setafk zone (run at the location you want to use).
-  zone:
-    enabled: false
-    world: ""
-    x: 0.0
-    y: 64.0
-    z: 0.0
-
-  # Optional auto-kick after being AFK too long. Disabled by default - /afk only tags a player
-  # unless this is turned on.
-  kick:
-    enabled: false
-    after-seconds: 1800
-
-# ═══════════════════════════════════════════════════════════════════════════════
-# TRAVEL - random teleport (/rtp, /rtpq).
-# ═══════════════════════════════════════════════════════════════════════════════
-travel:
-  rtp:
-    # Random-teleport lands somewhere between these two distances (blocks) from 0,0.
-    min-radius: 200.0
-    max-radius: 5000.0
-    # Minimum time between a player's own /rtp uses.
-    cooldown-seconds: 30
-    # How many random X/Z picks to try before giving up and reporting failure.
-    max-attempts: 20
-    # How many /rtp safe-location searches can run at once before new /rtp requests are
-    # told to use /rtpq instead.
-    max-concurrent-searches: 3
-    # How often (seconds) the /rtpq queue processes its next waiting player.
-    queue-interval-seconds: 5
-
-# ═══════════════════════════════════════════════════════════════════════════════
-# TPA - player-to-player teleport requests (/tpa, /tpahere, /tpaccept, /tpadeny,
-# /tpacancel, /tpauto, /tpahereauto).
-# ═══════════════════════════════════════════════════════════════════════════════
-tpa:
-  # How long (seconds) a /tpa or /tpahere request stays open before it silently expires.
-  request-timeout-seconds: 60
-
-# ═══════════════════════════════════════════════════════════════════════════════
-# PVP - dueling (/duel, /queue, /leave).
-# ═══════════════════════════════════════════════════════════════════════════════
-pvp:
-  duel:
-    # How long (seconds) a /duel challenge stays open before it silently expires.
-    challenge-timeout-seconds: 30
+      slot: 13
+    food:
+      display-name: "&6food"
+      material: COOKED_BEEF
+      slot: 14
+    shard:
+      display-name: "&dshard shop"
+      material: AMETHYST_SHARD
+      slot: 15
+    cratekeys:
+      display-name: "&ecrate keys"
+      material: TRIPWIRE_HOOK
+      slot: 4
+  menus:
+    end:
+      title: "&8shop - end"
+      items:
+        ender_chest: { display-name: "&fEnder Chest", material: ENDER_CHEST, price: 2500.0, currency: MONEY, slot: 9 }
+        ender_pearl: { display-name: "&fEnder Pearl", material: ENDER_PEARL, price: 75.0, currency: MONEY, slot: 10 }
+        end_stone: { display-name: "&fEnd Stone", material: END_STONE, price: 8.0, currency: MONEY, slot: 11 }
+        dragons_breath: { display-name: "&eDragon's Breath", material: DRAGON_BREATH, price: 1000.0, currency: MONEY, slot: 12 }
+        end_rod: { display-name: "&fEnd Rod", material: END_ROD, price: 100.0, currency: MONEY, slot: 13 }
+        chorus_fruit: { display-name: "&fChorus Fruit", material: CHORUS_FRUIT, price: 18.0, currency: MONEY, slot: 14 }
+        popped_chorus_fruit: { display-name: "&fPopped Chorus Fruit", material: POPPED_CHORUS_FRUIT, price: 15.0, currency: MONEY, slot: 15 }
+        shulker_shell: { display-name: "&fShulker Shell", material: SHULKER_SHELL, price: 350.0, currency: MONEY, slot: 16 }
+        shulker_box: { display-name: "&fShulker Box", material: SHULKER_BOX, price: 800.0, currency: MONEY, slot: 17 }
+    nether:
+      title: "&8shop - nether"
+      items:
+        blaze_rod: { display-name: "&fBlaze Rod", material: BLAZE_ROD, price: 150.0, currency: MONEY, slot: 9 }
+        nether_wart: { display-name: "&fNether Wart", material: NETHER_WART, price: 16.0, currency: MONEY, slot: 10 }
+        glowstone_dust: { display-name: "&fGlowstone Dust", material: GLOWSTONE_DUST, price: 15.0, currency: MONEY, slot: 11 }
+        magma_cream: { display-name: "&fMagma Cream", material: MAGMA_CREAM, price: 16.0, currency: MONEY, slot: 12 }
+        ghast_tear: { display-name: "&fGhast Tear", material: GHAST_TEAR, price: 350.0, currency: MONEY, slot: 13 }
+        nether_quartz: { display-name: "&fNether Quartz", material: QUARTZ, price: 15.0, currency: MONEY, slot: 14 }
+        soul_sand: { display-name: "&fSoul Sand", material: SOUL_SAND, price: 50.0, currency: MONEY, slot: 15 }
+        magma_block: { display-name: "&fMagma Block", material: MAGMA_BLOCK, price: 35.0, currency: MONEY, slot: 16 }
+        crying_obsidian: { display-name: "&fCrying Obsidian", material: CRYING_OBSIDIAN, price: 150.0, currency: MONEY, slot: 17 }
+    gear:
+      title: "&8gear - shop"
+      items:
+        obsidian: { display-name: "&fObsidian", material: OBSIDIAN, price: 100.0, currency: MONEY, slot: 9 }
+        end_crystal: { display-name: "&bEnd Crystal", material: END_CRYSTAL, price: 350.0, currency: MONEY, slot: 10 }
+        respawn_anchor: { display-name: "&fRespawn Anchor", material: RESPAWN_ANCHOR, price: 1000.0, currency: MONEY, slot: 11 }
+        glowstone: { display-name: "&fGlowstone", material: GLOWSTONE, price: 100.0, currency: MONEY, slot: 12 }
+        totem_of_undying: { display-name: "&eTotem of Undying", material: TOTEM_OF_UNDYING, price: 1250.0, currency: MONEY, slot: 13, max-quantity: 36 }
+        ender_pearl: { display-name: "&fEnder Pearl", material: ENDER_PEARL, price: 75.0, currency: MONEY, slot: 14 }
+        golden_apple: { display-name: "&bGolden Apple", material: GOLDEN_APPLE, price: 250.0, currency: MONEY, slot: 15 }
+        bottle_o_enchanting: { display-name: "&eBottle o' Enchanting", material: EXPERIENCE_BOTTLE, price: 100.0, currency: MONEY, slot: 16 }
+        arrow: { display-name: "&eArrow", material: ARROW, price: 500.0, currency: MONEY, slot: 17 }
+    food:
+      title: "&8food - shop"
+      items:
+        potato: { display-name: "&fPotato", material: POTATO, price: 75.0, currency: MONEY, slot: 9 }
+        sweet_berries: { display-name: "&fSweet Berries", material: SWEET_BERRIES, price: 50.0, currency: MONEY, slot: 10 }
+        melon_slice: { display-name: "&fMelon Slice", material: MELON_SLICE, price: 10.0, currency: MONEY, slot: 11 }
+        carrot: { display-name: "&fCarrot", material: CARROT, price: 65.0, currency: MONEY, slot: 12 }
+        apple: { display-name: "&fApple", material: APPLE, price: 25.0, currency: MONEY, slot: 13 }
+        cooked_chicken: { display-name: "&fCooked Chicken", material: COOKED_CHICKEN, price: 30.0, currency: MONEY, slot: 14 }
+        steak: { display-name: "&fSteak", material: COOKED_BEEF, price: 35.0, currency: MONEY, slot: 15 }
+        golden_carrot: { display-name: "&fGolden Carrot", material: GOLDEN_CARROT, price: 50.0, currency: MONEY, slot: 16 }
+        golden_apple: { display-name: "&bGolden Apple", material: GOLDEN_APPLE, price: 250.0, currency: MONEY, slot: 17 }
+    shard:
+      title: "&8shard - shop"
+      items:
+        pig_spawner: { display-name: "&dSpawner &7(Pig)", material: SPAWNER, price: 1500, currency: SHARD, slot: 9, spawner-mob: PIG }
+        cow_spawner: { display-name: "&dSpawner &7(Cow)", material: SPAWNER, price: 1500, currency: SHARD, slot: 10, spawner-mob: COW }
+        zombie_spawner: { display-name: "&dSpawner &7(Zombie)", material: SPAWNER, price: 1500, currency: SHARD, slot: 11, spawner-mob: ZOMBIE }
+        spider_spawner: { display-name: "&dSpawner &7(Spider)", material: SPAWNER, price: 1500, currency: SHARD, slot: 12, spawner-mob: SPIDER }
+        skeleton_spawner: { display-name: "&dSpawner &7(Skeleton)", material: SPAWNER, price: 1500, currency: SHARD, slot: 13, spawner-mob: SKELETON }
+        creeper_spawner: { display-name: "&dSpawner &7(Creeper)", material: SPAWNER, price: 1500, currency: SHARD, slot: 14, spawner-mob: CREEPER }
+        zombified_piglin_spawner: { display-name: "&dSpawner &7(Zombified Piglin)", material: SPAWNER, price: 1500, currency: SHARD, slot: 15, spawner-mob: ZOMBIFIED_PIGLIN }
+        blaze_spawner: { display-name: "&dSpawner &7(Blaze)", material: SPAWNER, price: 1500, currency: SHARD, slot: 16, spawner-mob: BLAZE }
+        iron_golem_spawner: { display-name: "&dSpawner &7(Iron Golem)", material: SPAWNER, price: 1500, currency: SHARD, slot: 17, spawner-mob: IRON_GOLEM }
+    cratekeys:
+      title: "&8&lcrate keys & shop"
+      items:
+        amethyst_key: { display-name: "&d&lAmethyst Key", material: TRIPWIRE_HOOK, price: 2500, currency: SHARD, slot: 11, crate: amethyst }
+        void_key: { display-name: "&5&lVoid Key", material: TRIPWIRE_HOOK, price: 3000, currency: SHARD, slot: 12, crate: void }
+        stellar_key: { display-name: "&b&lStellar Key", material: TRIPWIRE_HOOK, price: 3000, currency: SHARD, slot: 13, crate: stellar }
+        supernova_key: { display-name: "&6&lSupernova Key", material: TRIPWIRE_HOOK, price: 50000, currency: SHARD, slot: 14, crate: supernova }
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # CRATES - bind a chest/barrel/ender chest/shulker box to a crate with /crate bind,
 # then give players keys (or have StoreBridge run "crate set {player} <crate> <amount>"
-# to deliver keys from a store purchase). Matches the crate ids StoreBridge's real
-# config.yml already ships with (supernova/void/stellar) so no StoreBridge edits are
-# needed for crates specifically.
+# to deliver keys from a store purchase, or sell them Shards for keys via
+# /shop's Crate Keys category). Crate ids match real UDS: amethyst/void/stellar/
+# supernova.
 # ═══════════════════════════════════════════════════════════════════════════════
 crates:
+  amethyst:
+    display-name: "&d&lAmethyst Crate"
+    key-material: TRIPWIRE_HOOK
+    key-custom-model-data: 90000
+    rewards:
+      money_small:
+        kind: MONEY
+        money-amount: 250.0
+        weight: 45
+        display-name: "&a$250"
+      money_big:
+        kind: MONEY
+        money-amount: 1000.0
+        weight: 15
+        display-name: "&a$1,000"
+      shards_small:
+        kind: SHARDS
+        shards-amount: 15
+        weight: 25
+        display-name: "&d15 Shards"
+      iron:
+        kind: ITEM
+        material: IRON_INGOT
+        item-amount-min: 4
+        item-amount-max: 8
+        weight: 20
+        display-name: "&fIron Ingots"
+      diamonds:
+        kind: ITEM
+        material: DIAMOND
+        item-amount-min: 1
+        item-amount-max: 2
+        weight: 10
+        display-name: "&bDiamonds"
+
   supernova:
     display-name: "&6&lSupernova Crate"
     key-material: TRIPWIRE_HOOK
@@ -275,8 +284,7 @@ ecowatch:
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # MARKETWATCH - /marketwatch reports total circulating Money via a Discord webhook
-# on request; /ahstats shows real Auction House activity (the highest-priced active
-# listings).
+# on request.
 # ═══════════════════════════════════════════════════════════════════════════════
 marketwatch:
   discord:

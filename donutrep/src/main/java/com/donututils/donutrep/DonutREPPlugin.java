@@ -6,62 +6,17 @@ import com.donututils.donutrep.economy.ShardManager;
 import com.donututils.donutrep.market.command.ShardsCommand;
 import com.donututils.donutrep.market.command.ShopAdminCommand;
 import com.donututils.donutrep.market.command.ShopCommand;
-import com.donututils.donutrep.market.config.BoutiqueItem;
-import com.donututils.donutrep.market.config.CatalogEntry;
 import com.donututils.donutrep.market.config.MarketConfig;
-import com.donututils.donutrep.market.catalog.ItemCatalog;
+import com.donututils.donutrep.market.config.ShopCategory;
+import com.donututils.donutrep.market.config.ShopItem;
+import com.donututils.donutrep.market.config.ShopMenu;
 import com.donututils.donutrep.market.gui.MarketGuiService;
 import com.donututils.donutrep.market.gui.MarketMenuClickListener;
-import com.donututils.donutrep.market.pricing.MarketPriceStore;
-import com.donututils.donutrep.market.pricing.MarketPricingEngine;
 import com.donututils.donutrep.market.service.MarketService;
-
-import com.donututils.donutrep.auctionhouse.AuctionHouseCommand;
-import com.donututils.donutrep.auctionhouse.AuctionHouseManager;
-import com.donututils.donutrep.auctionhouse.ShopEditCommand;
-
-import com.donututils.donutrep.social.ChatCommand;
-import com.donututils.donutrep.social.ChatListener;
-import com.donututils.donutrep.social.GlobalChatManager;
-import com.donututils.donutrep.social.IgnoreCommand;
-import com.donututils.donutrep.social.IgnoreManager;
-import com.donututils.donutrep.social.MessagingManager;
-import com.donututils.donutrep.social.MsgCommand;
-import com.donututils.donutrep.social.ReplyCommand;
-import com.donututils.donutrep.social.UnignoreCommand;
-
-import com.donututils.donutrep.homes.DelHomeCommand;
-import com.donututils.donutrep.homes.HomeCommand;
-import com.donututils.donutrep.homes.HomeManager;
-import com.donututils.donutrep.homes.HomesCommand;
-import com.donututils.donutrep.homes.RenameHomeCommand;
-import com.donututils.donutrep.homes.SetHomeCommand;
-import com.donututils.donutrep.homes.SetSpawnCommand;
-import com.donututils.donutrep.homes.SpawnCommand;
-import com.donututils.donutrep.homes.SpawnManager;
-
-import com.donututils.donutrep.afk.AfkActivityListener;
-import com.donututils.donutrep.afk.AfkCommand;
-import com.donututils.donutrep.afk.AfkIdleSweeper;
-import com.donututils.donutrep.afk.AfkManager;
-import com.donututils.donutrep.afk.SetAfkCommand;
-
-import com.donututils.donutrep.travel.RtpCommand;
-import com.donututils.donutrep.travel.RtpConfig;
-import com.donututils.donutrep.travel.RtpManager;
-import com.donututils.donutrep.travel.RtpQueueService;
-import com.donututils.donutrep.travel.RtpqCommand;
-
-import com.donututils.donutrep.pvp.DuelCommand;
-import com.donututils.donutrep.pvp.DuelDeathListener;
-import com.donututils.donutrep.pvp.DuelManager;
-import com.donututils.donutrep.pvp.DuelQueueManager;
-import com.donututils.donutrep.pvp.LeaveCommand;
-import com.donututils.donutrep.pvp.QueueCommand;
 
 import net.milkbowl.vault.economy.Economy;
 
-import org.bukkit.ChatColor;
+import org.bukkit.Material;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.PluginCommand;
 import org.bukkit.configuration.ConfigurationSection;
@@ -80,13 +35,14 @@ import java.util.Locale;
 import java.util.Map;
 
 /**
- * DonutREP: an original SMP economy/society plugin combining a native Vault economy, a dual-currency
- * (Money/Shards) item shop, a real player-to-player auction house, social (chat/msg/ignore),
- * homes/warps, AFK, random-teleport, and dueling - plus the 7 addon jars this project absorbed
- * (Teams, Crates, staff tools, EconomyWatchdog, MarketWatch, PunishmentHistoryGUI, PurchaseAlert) and
- * an admin/player /help. It exposes the narrow command surface (addshards/removeshards/crate set)
- * that StoreBridge's storefront needs, registered under DonutREP's own name rather than
- * "ultimatedonutsmp:" - edit that prefix out of StoreBridge's config.yml to match.
+ * DonutREP: DonutREP's own native Vault economy (Money + Shards) plus a /shop catalog matching real
+ * UltimateDonutSmp's shop.yml, and the 7 addon jars this project absorbed (Teams, Crates, staff tools,
+ * EconomyWatchdog, MarketWatch, PunishmentHistoryGUI, PurchaseAlert) with an admin/player /help.
+ * Everything else UDS-shaped (social, homes, AFK, travel, PvP, auction house, orders board) was cut back
+ * out on request - this plugin now only covers those 7 addons' original scope plus the economy/shop they
+ * all depend on. It exposes the narrow command surface (addshards/removeshards/crate set) that
+ * StoreBridge's storefront needs, registered under DonutREP's own name rather than "ultimatedonutsmp:" -
+ * edit that prefix out of StoreBridge's config.yml to match.
  */
 public final class DonutREPPlugin extends JavaPlugin {
 
@@ -95,59 +51,10 @@ public final class DonutREPPlugin extends JavaPlugin {
     private EconomyManager economyManager;
     private ShardManager shardManager;
 
-    // ── Market ───────────────────────────────────────────────────────────────
-    private List<CatalogEntry> marketCatalog;
-    private MarketPriceStore marketPriceStore;
-    private MarketPricingEngine marketPricingEngine;
-    private com.donututils.donutrep.market.db.DatabaseManager marketDatabase;
-    private com.donututils.donutrep.market.SellLedger sellLedger;
+    // ── Market (/shop) ───────────────────────────────────────────────────────
     private MarketService marketService;
     private MarketGuiService marketGuiService;
     private volatile MarketConfig marketConfig;
-    private BukkitTask marketPriceTickTask;
-    private BukkitTask marketAutosaveTask;
-
-    // ── Auction House ────────────────────────────────────────────────────────
-    private com.donututils.donutrep.auctionhouse.db.DatabaseManager auctionHouseDatabase;
-    private AuctionHouseManager auctionHouseManager;
-
-    // ── Orders board ─────────────────────────────────────────────────────────
-    private com.donututils.donutrep.orders.db.DatabaseManager ordersDatabase;
-    private com.donututils.donutrep.orders.OrderBoardManager orderBoardManager;
-
-    // ── Social ───────────────────────────────────────────────────────────────
-    private com.donututils.donutrep.social.db.DatabaseManager socialDatabase;
-    private GlobalChatManager globalChatManager;
-    private IgnoreManager ignoreManager;
-    private MessagingManager messagingManager;
-
-    // ── Homes/Warps ──────────────────────────────────────────────────────────
-    private com.donututils.donutrep.homes.db.DatabaseManager homesDatabase;
-    private HomeManager homeManager;
-    private SpawnManager spawnManager;
-
-    // ── AFK ──────────────────────────────────────────────────────────────────
-    private AfkManager afkManager;
-    private com.donututils.donutrep.afk.AfkZoneManager afkZoneManager;
-    private BukkitTask afkSweepTask;
-    private BukkitTask afkKickTask;
-
-    // ── Travel (RTP) ─────────────────────────────────────────────────────────
-    private RtpManager rtpManager;
-    private RtpQueueService rtpQueueService;
-    private volatile RtpConfig rtpConfig;
-
-    // ── Warps / Portals ──────────────────────────────────────────────────────
-    private com.donututils.donutrep.warps.db.DatabaseManager warpsDatabase;
-    private com.donututils.donutrep.warps.WarpManager warpManager;
-    private com.donututils.donutrep.warps.PortalManager portalManager;
-
-    // ── TPA ──────────────────────────────────────────────────────────────────
-    private com.donututils.donutrep.tpa.TpaManager tpaManager;
-
-    // ── PvP (duels) ──────────────────────────────────────────────────────────
-    private DuelManager duelManager;
-    private DuelQueueManager duelQueueManager;
 
     // ── Teams ────────────────────────────────────────────────────────────────
     private com.donututils.donutrep.teams.db.DatabaseManager teamsDatabase;
@@ -184,18 +91,9 @@ public final class DonutREPPlugin extends JavaPlugin {
         }
 
         setupEconomy();
-        setupMarket();
-        setupAuctionHouse();
-        setupOrders();
-        setupSocial();
-        setupHomes();
-        setupAfk();
-        setupTravel();
-        setupWarps();
-        setupTpa();
-        setupPvp();
-        setupTeams();
         setupCrates();
+        setupMarket();
+        setupTeams();
         setupStaff();
         setupEcoWatch();
         setupMarketWatch();
@@ -203,8 +101,8 @@ public final class DonutREPPlugin extends JavaPlugin {
         setupPurchaseAlert();
         registerCommand("help", new com.donututils.donutrep.help.HelpCommand());
 
-        getLogger().info("DonutREP enabled - economy, market, auction house, social, homes, AFK, RTP, "
-                + "duels, Teams, Crates, staff tools, and every watchdog/alert addon are all live.");
+        getLogger().info("DonutREP enabled - economy, shop, Teams, Crates, staff tools, and every "
+                + "watchdog/alert addon are all live.");
     }
 
     @Override
@@ -213,37 +111,6 @@ public final class DonutREPPlugin extends JavaPlugin {
         if (economyDatabase != null) {
             economyDatabase.shutdown();
         }
-
-        cancel(marketPriceTickTask);
-        cancel(marketAutosaveTask);
-        if (marketPricingEngine != null) {
-            marketPricingEngine.saveAll();
-        }
-        if (marketDatabase != null) {
-            marketDatabase.shutdown();
-        }
-
-        if (auctionHouseDatabase != null) {
-            auctionHouseDatabase.shutdown();
-        }
-        if (ordersDatabase != null) {
-            ordersDatabase.shutdown();
-        }
-        if (socialDatabase != null) {
-            socialDatabase.shutdown();
-        }
-        if (homesDatabase != null) {
-            homesDatabase.shutdown();
-        }
-        cancel(afkSweepTask);
-        cancel(afkKickTask);
-        if (warpsDatabase != null) {
-            warpsDatabase.shutdown();
-        }
-        if (rtpQueueService != null) {
-            rtpQueueService.stop();
-        }
-
         if (cratesDatabase != null) {
             cratesDatabase.shutdown();
         }
@@ -288,12 +155,6 @@ public final class DonutREPPlugin extends JavaPlugin {
         registerCommand("addshards", new com.donututils.donutrep.economy.command.AddShardsCommand(shardManager));
         registerCommand("removeshards", new com.donututils.donutrep.economy.command.RemoveShardsCommand(shardManager));
         registerCommand("shards", new ShardsCommand(shardManager));
-        registerCommand("balance", new com.donututils.donutrep.economy.command.BalanceCommand(economyManager));
-        registerCommand("addmoney", new com.donututils.donutrep.economy.command.AddMoneyCommand(economyManager));
-        registerCommand("removemoney", new com.donututils.donutrep.economy.command.RemoveMoneyCommand(economyManager));
-        registerCommand("setmoney", new com.donututils.donutrep.economy.command.SetMoneyCommand(economyManager));
-        registerCommand("shardpay", new com.donututils.donutrep.economy.command.ShardPayCommand(shardManager));
-        registerCommand("setshards", new com.donututils.donutrep.economy.command.SetShardsCommand(shardManager));
     }
 
     private final class EconomyJoinListener implements Listener {
@@ -312,285 +173,101 @@ public final class DonutREPPlugin extends JavaPlugin {
     }
 
     // ═══════════════════════════════════════════════════════════════════════
-    // MARKET
+    // MARKET (/shop) - matches real UDS shop.yml: fixed categories/items/prices,
+    // no dynamic pricing, no market-side selling.
     // ═══════════════════════════════════════════════════════════════════════
 
     private void setupMarket() {
         marketConfig = loadMarketConfig();
-        marketCatalog = ItemCatalog.generate();
-        marketPriceStore = new MarketPriceStore(getDataFolder(), getLogger());
-        marketPricingEngine = new MarketPricingEngine(marketPriceStore, this::getMarketConfig);
-        marketDatabase = new com.donututils.donutrep.market.db.DatabaseManager(getDataFolder(), getLogger());
-        sellLedger = new com.donututils.donutrep.market.SellLedger(this, marketDatabase);
-        marketService = new MarketService(marketCatalog, marketPricingEngine, economyManager, shardManager, this::getMarketConfig, sellLedger);
-        marketGuiService = new MarketGuiService(marketCatalog, marketPricingEngine, marketService, this::getMarketConfig);
+        marketService = new MarketService(economyManager, shardManager, crateManager, this::getMarketConfig);
+        marketGuiService = new MarketGuiService(marketService, this::getMarketConfig);
 
         getServer().getPluginManager().registerEvents(new MarketMenuClickListener(), this);
 
-        registerCommand("shop", new ShopCommand(marketGuiService, marketService));
-        registerCommand("shopadmin", new ShopAdminCommand(this, shardManager));
-        registerCommand("worth", new com.donututils.donutrep.market.command.WorthCommand(marketService, marketPricingEngine));
-        registerCommand("sell", new com.donututils.donutrep.market.command.SellCommand(marketGuiService));
-        registerCommand("sellhand", new com.donututils.donutrep.market.command.SellHandCommand(marketService));
-        registerCommand("sellall", new com.donututils.donutrep.market.command.SellAllCommand(marketService));
-        registerCommand("sellmulti", new com.donututils.donutrep.market.command.SellMultiCommand(marketService));
-        registerCommand("sellmultiplier", new com.donututils.donutrep.market.command.SellMultiplierCommand(this));
-        registerCommand("sellprogress", new com.donututils.donutrep.market.command.SellProgressCommand(sellLedger));
-        registerCommand("sellhistory", new com.donututils.donutrep.market.command.SellHistoryCommand(sellLedger));
-        registerCommand("topsell", new com.donututils.donutrep.market.command.TopSellCommand(sellLedger));
-
-        startMarketTasks();
-        getLogger().info("Market enabled with " + marketCatalog.size() + " catalog item(s) generated.");
+        registerCommand("shop", new ShopCommand(marketGuiService));
+        registerCommand("shopadmin", new ShopAdminCommand(this));
     }
 
     public void reloadMarket() {
         reloadConfig();
         marketConfig = loadMarketConfig();
-        stopMarketTasks();
-        startMarketTasks();
     }
 
     public MarketConfig getMarketConfig() {
         return marketConfig;
     }
 
-    private void startMarketTasks() {
-        long tickTicks = Math.max(20L, marketConfig.priceTickIntervalSeconds() * 20L);
-        marketPriceTickTask = getServer().getScheduler().runTaskTimerAsynchronously(this, marketPricingEngine::tick, tickTicks, tickTicks);
-        marketAutosaveTask = getServer().getScheduler().runTaskTimer(this, marketPricingEngine::saveAll, 20L * 60L * 5L, 20L * 60L * 5L);
-    }
-
-    private void stopMarketTasks() {
-        cancel(marketPriceTickTask);
-        cancel(marketAutosaveTask);
-        marketPriceTickTask = null;
-        marketAutosaveTask = null;
-    }
-
     private MarketConfig loadMarketConfig() {
         FileConfiguration cfg = getConfig();
 
-        Map<String, Double> multipliers = new LinkedHashMap<>();
-        ConfigurationSection multSection = cfg.getConfigurationSection("market.category-multipliers");
-        if (multSection != null) {
-            for (String key : multSection.getKeys(false)) {
-                multipliers.put(key, multSection.getDouble(key, 1.0));
-            }
-        }
-
-        Map<String, BoutiqueItem> boutique = new LinkedHashMap<>();
-        ConfigurationSection boutiqueSection = cfg.getConfigurationSection("market.shard-boutique");
-        if (boutiqueSection != null) {
-            for (String id : boutiqueSection.getKeys(false)) {
-                ConfigurationSection s = boutiqueSection.getConfigurationSection(id);
+        List<ShopCategory> categories = new ArrayList<>();
+        ConfigurationSection categoriesSection = cfg.getConfigurationSection("market.categories");
+        if (categoriesSection != null) {
+            for (String id : categoriesSection.getKeys(false)) {
+                ConfigurationSection s = categoriesSection.getConfigurationSection(id);
                 if (s == null) {
                     continue;
                 }
-                boutique.put(id, new BoutiqueItem(
-                        id,
-                        s.getString("display-name", id),
-                        s.getString("description", ""),
-                        s.getString("material", "STONE"),
-                        s.getInt("custom-model-data", 0),
-                        s.getLong("price-shards", 100)
-                ));
+                Material icon = materialOrDefault(s.getString("material", "STONE"), Material.STONE);
+                categories.add(new ShopCategory(id, s.getString("display-name", id), icon, s.getInt("slot", 0)));
+            }
+        }
+
+        Map<String, ShopMenu> menus = new LinkedHashMap<>();
+        ConfigurationSection menusSection = cfg.getConfigurationSection("market.menus");
+        if (menusSection != null) {
+            for (String categoryId : menusSection.getKeys(false)) {
+                ConfigurationSection menuSection = menusSection.getConfigurationSection(categoryId);
+                if (menuSection == null) {
+                    continue;
+                }
+                List<ShopItem> items = new ArrayList<>();
+                ConfigurationSection itemsSection = menuSection.getConfigurationSection("items");
+                if (itemsSection != null) {
+                    for (String itemId : itemsSection.getKeys(false)) {
+                        ConfigurationSection is = itemsSection.getConfigurationSection(itemId);
+                        if (is == null) {
+                            continue;
+                        }
+                        Material material = materialOrDefault(is.getString("material", "STONE"), Material.STONE);
+                        com.donututils.donutrep.market.config.Currency currency;
+                        try {
+                            currency = com.donututils.donutrep.market.config.Currency.valueOf(
+                                    is.getString("currency", "MONEY").toUpperCase(Locale.ROOT));
+                        } catch (IllegalArgumentException ex) {
+                            currency = com.donututils.donutrep.market.config.Currency.MONEY;
+                        }
+                        items.add(new ShopItem(
+                                itemId,
+                                is.getString("display-name", itemId),
+                                material,
+                                is.getDouble("price", 0.0),
+                                currency,
+                                is.getInt("slot", 0),
+                                is.getInt("max-quantity", 0),
+                                is.getString("crate", null),
+                                is.getString("spawner-mob", null)
+                        ));
+                    }
+                }
+                menus.put(categoryId, new ShopMenu(menuSection.getString("title", categoryId), items));
             }
         }
 
         return new MarketConfig(
-                cfg.getString("market.gui.title", "&8Server Market"),
-                multipliers,
-                cfg.getDouble("market.sell-back-fraction", 0.4),
-                cfg.getInt("market.transaction-cooldown-seconds", 1),
-                cfg.getInt("market.max-quantity-per-transaction", 6400),
-                boutique,
-                cfg.getInt("market.dynamic-pricing.tick-interval-seconds", 60),
-                cfg.getDouble("market.dynamic-pricing.buy-impact-percent", 0.05),
-                cfg.getDouble("market.dynamic-pricing.sell-impact-percent", 0.05),
-                cfg.getDouble("market.dynamic-pricing.decay-percent-per-tick", 2.0),
-                cfg.getDouble("market.dynamic-pricing.min-price-factor", 0.25),
-                cfg.getDouble("market.dynamic-pricing.max-price-factor", 4.0)
+                cfg.getString("market.gui.title", "&8shop"),
+                categories,
+                menus,
+                cfg.getInt("market.max-quantity-per-transaction", 64)
         );
     }
 
-    // ═══════════════════════════════════════════════════════════════════════
-    // AUCTION HOUSE (/orders, /shopedit)
-    // ═══════════════════════════════════════════════════════════════════════
-
-    private void setupAuctionHouse() {
-        auctionHouseDatabase = new com.donututils.donutrep.auctionhouse.db.DatabaseManager(getDataFolder(), getLogger());
-        int maxListings = getConfig().getInt("auctionhouse.max-listings-per-player", 10);
-        auctionHouseManager = new AuctionHouseManager(this, auctionHouseDatabase, economyManager, maxListings);
-
-        AuctionHouseCommand auctionHouseCommand = new AuctionHouseCommand(auctionHouseManager);
-        registerCommand("auctionhouse", auctionHouseCommand);
-        registerCommand("ah", auctionHouseCommand);
-        registerCommand("shopedit", new ShopEditCommand(auctionHouseManager));
-    }
-
-    public AuctionHouseManager getAuctionHouseManager() {
-        return auctionHouseManager;
-    }
-
-    // ═══════════════════════════════════════════════════════════════════════
-    // ORDERS BOARD (/orders)
-    // ═══════════════════════════════════════════════════════════════════════
-
-    private void setupOrders() {
-        ordersDatabase = new com.donututils.donutrep.orders.db.DatabaseManager(getDataFolder(), getLogger());
-        orderBoardManager = new com.donututils.donutrep.orders.OrderBoardManager(this, ordersDatabase, economyManager);
-
-        registerCommand("orders", new com.donututils.donutrep.orders.OrdersCommand(orderBoardManager));
-    }
-
-    // ═══════════════════════════════════════════════════════════════════════
-    // SOCIAL (/chat /msg /reply /pm /ignore /unignore)
-    // ═══════════════════════════════════════════════════════════════════════
-
-    private void setupSocial() {
-        socialDatabase = new com.donututils.donutrep.social.db.DatabaseManager(getDataFolder(), getLogger());
-        globalChatManager = new com.donututils.donutrep.social.GlobalChatManager();
-        ignoreManager = new IgnoreManager(this, socialDatabase);
-        messagingManager = new MessagingManager(ignoreManager);
-
-        getServer().getPluginManager().registerEvents(new ChatListener(globalChatManager, ignoreManager), this);
-
-        registerCommand("chat", new ChatCommand(globalChatManager));
-        MsgCommand msgCommand = new MsgCommand(messagingManager);
-        registerCommand("msg", msgCommand);
-        registerCommand("pm", msgCommand);
-        registerCommand("reply", new ReplyCommand(messagingManager));
-        registerCommand("ignore", new IgnoreCommand(ignoreManager));
-        registerCommand("unignore", new UnignoreCommand(ignoreManager));
-    }
-
-    // ═══════════════════════════════════════════════════════════════════════
-    // HOMES / WARPS (/home /homes /sethome /delhome /renamehome /spawn /setspawn)
-    // ═══════════════════════════════════════════════════════════════════════
-
-    private void setupHomes() {
-        homesDatabase = new com.donututils.donutrep.homes.db.DatabaseManager(getDataFolder(), getLogger());
-        int maxHomes = getConfig().getInt("homes.max-homes-per-player", 3);
-        homeManager = new HomeManager(this, homesDatabase, () -> maxHomes);
-        spawnManager = new SpawnManager(this, homesDatabase);
-
-        registerCommand("home", new HomeCommand(homeManager));
-        registerCommand("homes", new HomesCommand(homeManager));
-        registerCommand("sethome", new SetHomeCommand(homeManager));
-        registerCommand("delhome", new DelHomeCommand(homeManager));
-        registerCommand("renamehome", new RenameHomeCommand(homeManager));
-        registerCommand("spawn", new SpawnCommand(spawnManager));
-        registerCommand("setspawn", new SetSpawnCommand(spawnManager));
-    }
-
-    // ═══════════════════════════════════════════════════════════════════════
-    // AFK (/afk /setafk)
-    // ═══════════════════════════════════════════════════════════════════════
-
-    private void setupAfk() {
-        afkManager = new AfkManager();
-        getServer().getPluginManager().registerEvents(new AfkActivityListener(afkManager), this);
-
-        afkZoneManager = new com.donututils.donutrep.afk.AfkZoneManager(this);
-        afkManager.addListener(afkZoneManager);
-
-        long timeoutMillis = getConfig().getInt("afk.timeout-seconds", 300) * 1000L;
-        com.donututils.donutrep.afk.AfkIdleSweeper idleSweeper = new AfkIdleSweeper(afkManager, () -> timeoutMillis);
-        afkSweepTask = getServer().getScheduler().runTaskTimer(this, idleSweeper, 20L * 15L, 20L * 15L);
-
-        boolean kickEnabled = getConfig().getBoolean("afk.kick.enabled", false);
-        long kickAfterMillis = getConfig().getInt("afk.kick.after-seconds", 1800) * 1000L;
-        com.donututils.donutrep.afk.AfkKickSweeper kickSweeper = new com.donututils.donutrep.afk.AfkKickSweeper(
-                afkManager, () -> kickEnabled, () -> kickAfterMillis);
-        afkKickTask = getServer().getScheduler().runTaskTimer(this, kickSweeper, 20L * 30L, 20L * 30L);
-
-        registerCommand("afk", new AfkCommand(afkManager));
-        registerCommand("setafk", new SetAfkCommand(afkManager, afkZoneManager));
-    }
-
-    // ═══════════════════════════════════════════════════════════════════════
-    // TRAVEL (/rtp /rtpq)
-    // ═══════════════════════════════════════════════════════════════════════
-
-    private void setupTravel() {
-        rtpConfig = loadRtpConfig();
-        rtpManager = new RtpManager(this, this::getRtpConfig);
-        rtpQueueService = new RtpQueueService(this, rtpManager, this::getRtpConfig);
-        rtpQueueService.start();
-
-        registerCommand("rtp", new RtpCommand(rtpManager));
-        registerCommand("rtpq", new RtpqCommand(rtpQueueService));
-        registerCommand("teleport", new com.donututils.donutrep.travel.TeleportCommand());
-        registerCommand("randomteleport", new com.donututils.donutrep.travel.RandomTeleportCommand(rtpManager));
-        registerCommand("findplayer", new com.donututils.donutrep.travel.FindPlayerCommand());
-    }
-
-    public RtpConfig getRtpConfig() {
-        return rtpConfig;
-    }
-
-    private RtpConfig loadRtpConfig() {
-        FileConfiguration cfg = getConfig();
-        return new RtpConfig(
-                cfg.getDouble("travel.rtp.min-radius", 200.0),
-                cfg.getDouble("travel.rtp.max-radius", 5000.0),
-                cfg.getInt("travel.rtp.cooldown-seconds", 30),
-                cfg.getInt("travel.rtp.max-attempts", 20),
-                cfg.getInt("travel.rtp.max-concurrent-searches", 3),
-                cfg.getInt("travel.rtp.queue-interval-seconds", 5)
-        );
-    }
-
-    // ═══════════════════════════════════════════════════════════════════════
-    // WARPS / PORTALS (/warp /setwarp /delwarp /warpmanager /portalmanager)
-    // ═══════════════════════════════════════════════════════════════════════
-
-    private void setupWarps() {
-        warpsDatabase = new com.donututils.donutrep.warps.db.DatabaseManager(getDataFolder(), getLogger());
-        warpManager = new com.donututils.donutrep.warps.WarpManager(this, warpsDatabase);
-        portalManager = new com.donututils.donutrep.warps.PortalManager(this, warpsDatabase);
-
-        getServer().getPluginManager().registerEvents(
-                new com.donututils.donutrep.warps.PortalMoveListener(portalManager, warpManager), this);
-
-        registerCommand("warp", new com.donututils.donutrep.warps.WarpCommand(warpManager));
-        registerCommand("setwarp", new com.donututils.donutrep.warps.SetWarpCommand(warpManager));
-        registerCommand("delwarp", new com.donututils.donutrep.warps.DelWarpCommand(warpManager));
-        registerCommand("warpmanager", new com.donututils.donutrep.warps.WarpManagerCommand(warpManager));
-        registerCommand("portalmanager", new com.donututils.donutrep.warps.PortalManagerCommand(portalManager));
-    }
-
-    // ═══════════════════════════════════════════════════════════════════════
-    // TPA (/tpa /tpahere /tpaccept /tpadeny /tpacancel /tpauto /tpahereauto)
-    // ═══════════════════════════════════════════════════════════════════════
-
-    private void setupTpa() {
-        long timeoutMillis = getConfig().getInt("tpa.request-timeout-seconds", 60) * 1000L;
-        tpaManager = new com.donututils.donutrep.tpa.TpaManager(timeoutMillis);
-
-        registerCommand("tpa", new com.donututils.donutrep.tpa.TpaCommand(tpaManager));
-        registerCommand("tpahere", new com.donututils.donutrep.tpa.TpaHereCommand(tpaManager));
-        registerCommand("tpaccept", new com.donututils.donutrep.tpa.TpAcceptCommand(tpaManager));
-        registerCommand("tpadeny", new com.donututils.donutrep.tpa.TpaDenyCommand(tpaManager));
-        registerCommand("tpacancel", new com.donututils.donutrep.tpa.TpaCancelCommand(tpaManager));
-        registerCommand("tpauto", new com.donututils.donutrep.tpa.TpAutoCommand(tpaManager));
-        registerCommand("tpahereauto", new com.donututils.donutrep.tpa.TpaHereAutoCommand(tpaManager));
-    }
-
-    // ═══════════════════════════════════════════════════════════════════════
-    // PVP (/duel /queue /leave)
-    // ═══════════════════════════════════════════════════════════════════════
-
-    private void setupPvp() {
-        long challengeTimeoutMillis = getConfig().getInt("pvp.duel.challenge-timeout-seconds", 30) * 1000L;
-        duelManager = new DuelManager(challengeTimeoutMillis);
-        duelQueueManager = new DuelQueueManager(duelManager, afkManager);
-
-        getServer().getPluginManager().registerEvents(new DuelDeathListener(duelManager), this);
-
-        registerCommand("duel", new DuelCommand(duelManager));
-        registerCommand("queue", new QueueCommand(duelQueueManager));
-        registerCommand("leave", new LeaveCommand(duelManager, duelQueueManager));
+    private static Material materialOrDefault(String name, Material fallback) {
+        try {
+            return Material.valueOf(name.toUpperCase(Locale.ROOT));
+        } catch (IllegalArgumentException ex) {
+            return fallback;
+        }
     }
 
     // ═══════════════════════════════════════════════════════════════════════
@@ -621,7 +298,7 @@ public final class DonutREPPlugin extends JavaPlugin {
                 economyManager, shardManager, this::getCrateConfig);
         crateManager.respawnHolograms();
 
-        getServer().getPluginManager().registerEvents(new com.donututils.donutrep.crates.CrateInteractListener(crateManager, afkManager), this);
+        getServer().getPluginManager().registerEvents(new com.donututils.donutrep.crates.CrateInteractListener(crateManager), this);
         registerCommand("crate", new com.donututils.donutrep.crates.CrateCommand(this, crateManager));
     }
 
@@ -730,10 +407,7 @@ public final class DonutREPPlugin extends JavaPlugin {
         marketWatchWebhook = new com.donututils.donutrep.marketwatch.discord.DiscordWebhook(this);
         marketWatchWebhook.configure(getConfig().getString("marketwatch.discord.webhook-url", ""),
                 getConfig().getString("marketwatch.discord.username", "MarketWatch"));
-        com.donututils.donutrep.marketwatch.MarketWatchCommand marketWatchCommand =
-                new com.donututils.donutrep.marketwatch.MarketWatchCommand(this, marketWatchWebhook, auctionHouseManager);
-        registerCommand("marketwatch", marketWatchCommand);
-        registerCommand("ahstats", new com.donututils.donutrep.marketwatch.AhStatsCommand(marketWatchCommand));
+        registerCommand("marketwatch", new com.donututils.donutrep.marketwatch.MarketWatchCommand(this, marketWatchWebhook));
     }
 
     public void reloadMarketWatch() {
