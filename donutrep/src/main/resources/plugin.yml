@@ -35,6 +35,31 @@ commands:
     aliases: [bal, money]
     permission: economy.command.balance
     permission-message: "&cYou do not have permission to use /balance."
+  addmoney:
+    description: Add Money to a player.
+    usage: /addmoney <player> <amount>
+    permission: economy.admin
+    permission-message: "&cYou do not have permission to use /addmoney."
+  removemoney:
+    description: Remove Money from a player.
+    usage: /removemoney <player> <amount>
+    permission: economy.admin
+    permission-message: "&cYou do not have permission to use /removemoney."
+  setmoney:
+    description: Set a player's Money balance exactly.
+    usage: /setmoney <player> <amount>
+    permission: economy.admin
+    permission-message: "&cYou do not have permission to use /setmoney."
+  shardpay:
+    description: Send Shards to another online player.
+    usage: /shardpay <player> <amount>
+    permission: economy.command.pay
+    permission-message: "&cYou do not have permission to use /shardpay."
+  setshards:
+    description: Set a player's Shards balance exactly.
+    usage: /setshards <player> <amount>
+    permission: economy.admin
+    permission-message: "&cYou do not have permission to use /setshards."
   # --- Market (dual-currency categorized shop) ---
   shop:
     description: Open the categorized item shop (Overworld/Nether/End/Shard Boutique), or sell from chat.
@@ -46,6 +71,11 @@ commands:
     usage: /shopadmin <reload|addshards <player> <amount>|setmultiplier <category> <value>> ...
     permission: market.admin
     permission-message: "&cYou do not have permission to manage the shop."
+  worth:
+    description: Check the current buy/sell price of an item.
+    usage: /worth [material]
+    permission: market.command.shop
+    permission-message: "&cYou do not have permission to use /worth."
   # --- Auction House (real player-to-player sell marketplace) ---
   auctionhouse:
     description: List, browse, and buy player-listed items on the Auction House.

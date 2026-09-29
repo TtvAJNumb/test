@@ -271,6 +271,11 @@ public final class DonutREPPlugin extends JavaPlugin {
         registerCommand("removeshards", new com.donututils.donutrep.economy.command.RemoveShardsCommand(shardManager));
         registerCommand("shards", new ShardsCommand(shardManager));
         registerCommand("balance", new com.donututils.donutrep.economy.command.BalanceCommand(economyManager));
+        registerCommand("addmoney", new com.donututils.donutrep.economy.command.AddMoneyCommand(economyManager));
+        registerCommand("removemoney", new com.donututils.donutrep.economy.command.RemoveMoneyCommand(economyManager));
+        registerCommand("setmoney", new com.donututils.donutrep.economy.command.SetMoneyCommand(economyManager));
+        registerCommand("shardpay", new com.donututils.donutrep.economy.command.ShardPayCommand(shardManager));
+        registerCommand("setshards", new com.donututils.donutrep.economy.command.SetShardsCommand(shardManager));
     }
 
     private final class EconomyJoinListener implements Listener {
@@ -304,6 +309,7 @@ public final class DonutREPPlugin extends JavaPlugin {
 
         registerCommand("shop", new ShopCommand(marketGuiService, marketService));
         registerCommand("shopadmin", new ShopAdminCommand(this, shardManager));
+        registerCommand("worth", new com.donututils.donutrep.market.command.WorthCommand(marketService, marketPricingEngine));
 
         startMarketTasks();
         getLogger().info("Market enabled with " + marketCatalog.size() + " catalog item(s) generated.");
