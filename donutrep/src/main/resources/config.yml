@@ -77,11 +77,9 @@ auctionhouse:
   max-listings-per-player: 10
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# SOCIAL - chat channels, private messages, and ignore lists.
+# SOCIAL - private messages and ignore lists persist to social.db. Global chat mute/
+# slow-mode delay (see /chat) are runtime-only staff toggles, not config values.
 # ═══════════════════════════════════════════════════════════════════════════════
-social:
-  # How far (blocks) a LOCAL-channel chat message reaches. GLOBAL always reaches everyone.
-  local-chat-radius-blocks: 100.0
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # HOMES - per-player named homes and the single server-wide spawn point.
@@ -96,6 +94,21 @@ afk:
   # How long (seconds) a player can be idle before being automatically marked AFK.
   # Set to 0 to disable automatic AFK (manual /afk still works).
   timeout-seconds: 300
+
+  # Optional AFK lounge - going AFK teleports the player here, returning teleports them back.
+  # Disabled by default. Set with /setafk zone (run at the location you want to use).
+  zone:
+    enabled: false
+    world: ""
+    x: 0.0
+    y: 64.0
+    z: 0.0
+
+  # Optional auto-kick after being AFK too long. Disabled by default - /afk only tags a player
+  # unless this is turned on.
+  kick:
+    enabled: false
+    after-seconds: 1800
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # TRAVEL - random teleport (/rtp, /rtpq).

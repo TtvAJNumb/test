@@ -24,21 +24,30 @@ public final class HelpTopics {
                 "&6&lShards &7- /shards [player]",
                 "&7Check your (or another player's) Shards balance - the premium currency."
         });
+        t.put("balance", new String[]{
+                "&6&lBalance &7- /balance [player] (aliases: /bal, /money)",
+                "&7Check your (or another player's) Money balance."
+        });
         t.put("shop", new String[]{
                 "&6&lShop &7- /shop [sell hand]",
                 "&7Open the categorized item market (Overworld/Nether/End/Shard Boutique)."
         });
+        t.put("auctionhouse", new String[]{
+                "&6&lAuction House &7- /auctionhouse <sell <price>|list [page]|buy <id>|my|claims|cancel <id>|reload> (alias: /ah)",
+                "&7The player-to-player marketplace - list your items or buy others'."
+        });
+        t.put("ah", t.get("auctionhouse"));
         t.put("orders", new String[]{
-                "&6&lOrders &7- /orders <sell <price>|list [page]|buy <id>|mine|cancel <id>>",
-                "&7The real player-to-player Auction House - list your items or buy others'."
+                "&6&lOrders &7- /orders [create <price> <amount>|fulfill <id>|my|collect|cancel <id>]",
+                "&7Post a buy request for an item (hold a sample + set price/amount); anyone can fulfill it for the payout."
         });
         t.put("shopedit", new String[]{
                 "&6&lShopEdit &7- /shopedit remove <id>",
                 "&7Staff moderation - force-remove any Auction House listing."
         });
         t.put("chat", new String[]{
-                "&6&lChat &7- /chat [global|local]",
-                "&7Switch which chat channel your messages go to."
+                "&6&lChat &7- /chat <help|mute|unmute|delay <seconds>|clear>",
+                "&7Staff command - administer global chat (mute-all, slow-mode delay, or clear the screen)."
         });
         t.put("msg", new String[]{
                 "&6&lMsg &7- /msg <player> <message> (alias: /pm)",

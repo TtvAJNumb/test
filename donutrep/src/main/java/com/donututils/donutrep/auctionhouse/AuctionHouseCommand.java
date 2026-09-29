@@ -11,19 +11,19 @@ import org.bukkit.inventory.ItemStack;
 import java.util.List;
 import java.util.Locale;
 
-/** /orders - the real player-to-player marketplace:
- * /orders sell &lt;price&gt; - lists the item in your hand
- * /orders list [page] - browses every active listing
- * /orders buy &lt;id&gt; - buys a listing
- * /orders mine - lists your own active listings
- * /orders cancel &lt;id&gt; - pulls your own listing, returning the item */
-public final class OrdersCommand implements CommandExecutor {
+/** /auctionhouse (alias /ah) - the real player-to-player marketplace, matching real UDS's command
+ * name and subcommands (sell|my|claims|cancel|reload). "list" and "buy" are necessary additions
+ * beyond that literal usage string - real UDS opens a GUI to browse/buy where this is chat-based
+ * instead. There's no separate claims inbox: proceeds from a sale are deposited to your Money
+ * balance immediately, so /auctionhouse claims just confirms that rather than handing over a queued
+ * payout. */
+public final class AuctionHouseCommand implements CommandExecutor {
 
     private static final int PAGE_SIZE = 8;
 
     private final AuctionHouseManager auctionHouse;
 
-    public OrdersCommand(AuctionHouseManager auctionHouse) {
+    public AuctionHouseCommand(AuctionHouseManager auctionHouse) {
         this.auctionHouse = auctionHouse;
     }
 
@@ -34,23 +34,29 @@ public final class OrdersCommand implements CommandExecutor {
             return true;
         }
         if (args.length < 1) {
-            player.sendMessage(color("&cUsage: /orders <sell <price>|list [page]|buy <id>|mine|cancel <id>>"));
+            list(player, args);
             return true;
         }
         switch (args[0].toLowerCase(Locale.ROOT)) {
             case "sell" -> sell(player, args);
             case "list" -> list(player, args);
             case "buy" -> buy(player, args);
-            case "mine" -> mine(player);
+            case "my", "mine" -> mine(player);
             case "cancel" -> cancel(player, args);
-            default -> player.sendMessage(color("&cUsage: /orders <sell <price>|list [page]|buy <id>|mine|cancel <id>>"));
+            case "claims" -> player.sendMessage(color("&7Sale proceeds are deposited to your Money balance automatically - nothing pending to claim."));
+            case "reload" -> player.sendMessage(color("&aAuction House has no reloadable config."));
+            default -> sendUsage(player);
         }
         return true;
     }
 
+    private void sendUsage(Player player) {
+        player.sendMessage(color("&cUsage: /auctionhouse <sell <price>|list [page]|buy <id>|my|claims|cancel <id>|reload>"));
+    }
+
     private void sell(Player player, String[] args) {
         if (args.length < 2) {
-            player.sendMessage(color("&cUsage: /orders sell <price>"));
+            player.sendMessage(color("&cUsage: /auctionhouse sell <price>"));
             return;
         }
         double price;
@@ -99,13 +105,13 @@ public final class OrdersCommand implements CommandExecutor {
         player.sendMessage(color("&6&lAuction House &7(page " + page + "/" + totalPages + ")"));
         for (AuctionListing listing : listings.subList(from, to)) {
             player.sendMessage(color("&e#" + listing.id() + " &f" + listing.amount() + "x " + displayName(listing)
-                    + " &7- " + formatMoney(listing.price()) + " &7(by " + listing.sellerName() + ") &8/orders buy " + listing.id()));
+                    + " &7- " + formatMoney(listing.price()) + " &7(by " + listing.sellerName() + ") &8/auctionhouse buy " + listing.id()));
         }
     }
 
     private void buy(Player player, String[] args) {
         if (args.length < 2) {
-            player.sendMessage(color("&cUsage: /orders buy <id>"));
+            player.sendMessage(color("&cUsage: /auctionhouse buy <id>"));
             return;
         }
         int id;
@@ -120,7 +126,7 @@ public final class OrdersCommand implements CommandExecutor {
             case SUCCESS -> player.sendMessage(color("&aPurchased listing #" + id + "."));
             case NOT_FOUND -> player.sendMessage(color("&cNo listing #" + id + "."));
             case INSUFFICIENT_FUNDS -> player.sendMessage(color("&cYou can't afford that."));
-            case OWN_LISTING -> player.sendMessage(color("&cYou can't buy your own listing - use /orders cancel instead."));
+            case OWN_LISTING -> player.sendMessage(color("&cYou can't buy your own listing - use /auctionhouse cancel instead."));
         }
     }
 
@@ -139,7 +145,7 @@ public final class OrdersCommand implements CommandExecutor {
 
     private void cancel(Player player, String[] args) {
         if (args.length < 2) {
-            player.sendMessage(color("&cUsage: /orders cancel <id>"));
+            player.sendMessage(color("&cUsage: /auctionhouse cancel <id>"));
             return;
         }
         int id;

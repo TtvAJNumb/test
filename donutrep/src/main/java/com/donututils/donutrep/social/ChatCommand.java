@@ -1,43 +1,71 @@
 package com.donututils.donutrep.social;
 
+import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
-import org.bukkit.entity.Player;
 
 import java.util.Locale;
 
-/** /chat [global|local] - switches which chat channel your messages go to, or with no argument
- * reports which one you're currently on. */
+/** /chat &lt;help|mute|unmute|delay|clear&gt; - staff administration of global chat, matching real
+ * UDS's /chat (not a per-player channel switch - there's no such command in the real plugin). */
 public final class ChatCommand implements CommandExecutor {
 
-    private final ChatManager chatManager;
+    private final GlobalChatManager globalChatManager;
 
-    public ChatCommand(ChatManager chatManager) {
-        this.chatManager = chatManager;
+    public ChatCommand(GlobalChatManager globalChatManager) {
+        this.globalChatManager = globalChatManager;
     }
 
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
-        if (!(sender instanceof Player player)) {
-            sender.sendMessage(color("&cOnly players can do that."));
+        if (!sender.hasPermission("social.command.chat")) {
+            sender.sendMessage(color("&cYou do not have permission to use /chat."));
             return true;
         }
         if (args.length == 0) {
-            player.sendMessage(color("&7You're on the &f" + chatManager.channelOf(player.getUniqueId()) + " &7channel. Usage: /chat <global|local>"));
+            sendHelp(sender);
             return true;
         }
-        ChatManager.Channel channel;
-        try {
-            channel = ChatManager.Channel.valueOf(args[0].toUpperCase(Locale.ROOT));
-        } catch (IllegalArgumentException ex) {
-            player.sendMessage(color("&cUsage: /chat <global|local>"));
-            return true;
+        switch (args[0].toLowerCase(Locale.ROOT)) {
+            case "help" -> sendHelp(sender);
+            case "mute" -> {
+                globalChatManager.setMuted(true);
+                Bukkit.broadcastMessage(color("&cGlobal chat has been muted."));
+            }
+            case "unmute" -> {
+                globalChatManager.setMuted(false);
+                Bukkit.broadcastMessage(color("&aGlobal chat has been unmuted."));
+            }
+            case "delay" -> {
+                if (args.length < 2) {
+                    sender.sendMessage(color("&cUsage: /chat delay <seconds>"));
+                    return true;
+                }
+                int seconds;
+                try {
+                    seconds = Integer.parseInt(args[1]);
+                } catch (NumberFormatException ex) {
+                    sender.sendMessage(color("&cInvalid number of seconds."));
+                    return true;
+                }
+                globalChatManager.setDelaySeconds(seconds);
+                sender.sendMessage(color(seconds <= 0 ? "&aChat delay disabled." : "&aChat delay set to " + seconds + " second(s)."));
+            }
+            case "clear" -> {
+                for (int i = 0; i < 100; i++) {
+                    Bukkit.broadcastMessage("");
+                }
+                Bukkit.broadcastMessage(color("&7Chat cleared by " + sender.getName() + "."));
+            }
+            default -> sendHelp(sender);
         }
-        chatManager.setChannel(player.getUniqueId(), channel);
-        player.sendMessage(color("&aSwitched to the &f" + channel + " &achat channel."));
         return true;
+    }
+
+    private void sendHelp(CommandSender sender) {
+        sender.sendMessage(color("&6&lChat &7- /chat <help|mute|unmute|delay <seconds>|clear>"));
     }
 
     private static String color(String message) {

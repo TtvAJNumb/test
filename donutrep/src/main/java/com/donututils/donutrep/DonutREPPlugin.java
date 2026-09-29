@@ -16,13 +16,13 @@ import com.donututils.donutrep.market.pricing.MarketPriceStore;
 import com.donututils.donutrep.market.pricing.MarketPricingEngine;
 import com.donututils.donutrep.market.service.MarketService;
 
+import com.donututils.donutrep.auctionhouse.AuctionHouseCommand;
 import com.donututils.donutrep.auctionhouse.AuctionHouseManager;
-import com.donututils.donutrep.auctionhouse.OrdersCommand;
 import com.donututils.donutrep.auctionhouse.ShopEditCommand;
 
 import com.donututils.donutrep.social.ChatCommand;
 import com.donututils.donutrep.social.ChatListener;
-import com.donututils.donutrep.social.ChatManager;
+import com.donututils.donutrep.social.GlobalChatManager;
 import com.donututils.donutrep.social.IgnoreCommand;
 import com.donututils.donutrep.social.IgnoreManager;
 import com.donututils.donutrep.social.MessagingManager;
@@ -109,9 +109,13 @@ public final class DonutREPPlugin extends JavaPlugin {
     private com.donututils.donutrep.auctionhouse.db.DatabaseManager auctionHouseDatabase;
     private AuctionHouseManager auctionHouseManager;
 
+    // ── Orders board ─────────────────────────────────────────────────────────
+    private com.donututils.donutrep.orders.db.DatabaseManager ordersDatabase;
+    private com.donututils.donutrep.orders.OrderBoardManager orderBoardManager;
+
     // ── Social ───────────────────────────────────────────────────────────────
     private com.donututils.donutrep.social.db.DatabaseManager socialDatabase;
-    private ChatManager chatManager;
+    private GlobalChatManager globalChatManager;
     private IgnoreManager ignoreManager;
     private MessagingManager messagingManager;
 
@@ -122,7 +126,9 @@ public final class DonutREPPlugin extends JavaPlugin {
 
     // ── AFK ──────────────────────────────────────────────────────────────────
     private AfkManager afkManager;
+    private com.donututils.donutrep.afk.AfkZoneManager afkZoneManager;
     private BukkitTask afkSweepTask;
+    private BukkitTask afkKickTask;
 
     // ── Travel (RTP) ─────────────────────────────────────────────────────────
     private RtpManager rtpManager;
@@ -170,6 +176,7 @@ public final class DonutREPPlugin extends JavaPlugin {
         setupEconomy();
         setupMarket();
         setupAuctionHouse();
+        setupOrders();
         setupSocial();
         setupHomes();
         setupAfk();
@@ -204,6 +211,9 @@ public final class DonutREPPlugin extends JavaPlugin {
         if (auctionHouseDatabase != null) {
             auctionHouseDatabase.shutdown();
         }
+        if (ordersDatabase != null) {
+            ordersDatabase.shutdown();
+        }
         if (socialDatabase != null) {
             socialDatabase.shutdown();
         }
@@ -211,6 +221,7 @@ public final class DonutREPPlugin extends JavaPlugin {
             homesDatabase.shutdown();
         }
         cancel(afkSweepTask);
+        cancel(afkKickTask);
         if (rtpQueueService != null) {
             rtpQueueService.stop();
         }
@@ -259,6 +270,7 @@ public final class DonutREPPlugin extends JavaPlugin {
         registerCommand("addshards", new com.donututils.donutrep.economy.command.AddShardsCommand(shardManager));
         registerCommand("removeshards", new com.donututils.donutrep.economy.command.RemoveShardsCommand(shardManager));
         registerCommand("shards", new ShardsCommand(shardManager));
+        registerCommand("balance", new com.donututils.donutrep.economy.command.BalanceCommand(economyManager));
     }
 
     private final class EconomyJoinListener implements Listener {
@@ -376,7 +388,9 @@ public final class DonutREPPlugin extends JavaPlugin {
         int maxListings = getConfig().getInt("auctionhouse.max-listings-per-player", 10);
         auctionHouseManager = new AuctionHouseManager(this, auctionHouseDatabase, economyManager, maxListings);
 
-        registerCommand("orders", new OrdersCommand(auctionHouseManager));
+        AuctionHouseCommand auctionHouseCommand = new AuctionHouseCommand(auctionHouseManager);
+        registerCommand("auctionhouse", auctionHouseCommand);
+        registerCommand("ah", auctionHouseCommand);
         registerCommand("shopedit", new ShopEditCommand(auctionHouseManager));
     }
 
@@ -385,19 +399,29 @@ public final class DonutREPPlugin extends JavaPlugin {
     }
 
     // ═══════════════════════════════════════════════════════════════════════
+    // ORDERS BOARD (/orders)
+    // ═══════════════════════════════════════════════════════════════════════
+
+    private void setupOrders() {
+        ordersDatabase = new com.donututils.donutrep.orders.db.DatabaseManager(getDataFolder(), getLogger());
+        orderBoardManager = new com.donututils.donutrep.orders.OrderBoardManager(this, ordersDatabase, economyManager);
+
+        registerCommand("orders", new com.donututils.donutrep.orders.OrdersCommand(orderBoardManager));
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
     // SOCIAL (/chat /msg /reply /pm /ignore /unignore)
     // ═══════════════════════════════════════════════════════════════════════
 
     private void setupSocial() {
         socialDatabase = new com.donututils.donutrep.social.db.DatabaseManager(getDataFolder(), getLogger());
-        chatManager = new ChatManager();
+        globalChatManager = new com.donututils.donutrep.social.GlobalChatManager();
         ignoreManager = new IgnoreManager(this, socialDatabase);
         messagingManager = new MessagingManager(ignoreManager);
 
-        double localRadius = getConfig().getDouble("social.local-chat-radius-blocks", 100.0);
-        getServer().getPluginManager().registerEvents(new ChatListener(chatManager, ignoreManager, () -> localRadius), this);
+        getServer().getPluginManager().registerEvents(new ChatListener(globalChatManager, ignoreManager), this);
 
-        registerCommand("chat", new ChatCommand(chatManager));
+        registerCommand("chat", new ChatCommand(globalChatManager));
         MsgCommand msgCommand = new MsgCommand(messagingManager);
         registerCommand("msg", msgCommand);
         registerCommand("pm", msgCommand);
@@ -433,12 +457,21 @@ public final class DonutREPPlugin extends JavaPlugin {
         afkManager = new AfkManager();
         getServer().getPluginManager().registerEvents(new AfkActivityListener(afkManager), this);
 
+        afkZoneManager = new com.donututils.donutrep.afk.AfkZoneManager(this);
+        afkManager.addListener(afkZoneManager);
+
         long timeoutMillis = getConfig().getInt("afk.timeout-seconds", 300) * 1000L;
-        AfkIdleSweeper sweeper = new AfkIdleSweeper(afkManager, () -> timeoutMillis);
-        afkSweepTask = getServer().getScheduler().runTaskTimer(this, sweeper, 20L * 15L, 20L * 15L);
+        com.donututils.donutrep.afk.AfkIdleSweeper idleSweeper = new AfkIdleSweeper(afkManager, () -> timeoutMillis);
+        afkSweepTask = getServer().getScheduler().runTaskTimer(this, idleSweeper, 20L * 15L, 20L * 15L);
+
+        boolean kickEnabled = getConfig().getBoolean("afk.kick.enabled", false);
+        long kickAfterMillis = getConfig().getInt("afk.kick.after-seconds", 1800) * 1000L;
+        com.donututils.donutrep.afk.AfkKickSweeper kickSweeper = new com.donututils.donutrep.afk.AfkKickSweeper(
+                afkManager, () -> kickEnabled, () -> kickAfterMillis);
+        afkKickTask = getServer().getScheduler().runTaskTimer(this, kickSweeper, 20L * 30L, 20L * 30L);
 
         registerCommand("afk", new AfkCommand(afkManager));
-        registerCommand("setafk", new SetAfkCommand(afkManager));
+        registerCommand("setafk", new SetAfkCommand(afkManager, afkZoneManager));
     }
 
     // ═══════════════════════════════════════════════════════════════════════
@@ -478,7 +511,7 @@ public final class DonutREPPlugin extends JavaPlugin {
     private void setupPvp() {
         long challengeTimeoutMillis = getConfig().getInt("pvp.duel.challenge-timeout-seconds", 30) * 1000L;
         duelManager = new DuelManager(challengeTimeoutMillis);
-        duelQueueManager = new DuelQueueManager(duelManager);
+        duelQueueManager = new DuelQueueManager(duelManager, afkManager);
 
         getServer().getPluginManager().registerEvents(new DuelDeathListener(duelManager), this);
 
@@ -515,7 +548,7 @@ public final class DonutREPPlugin extends JavaPlugin {
                 economyManager, shardManager, this::getCrateConfig);
         crateManager.respawnHolograms();
 
-        getServer().getPluginManager().registerEvents(new com.donututils.donutrep.crates.CrateInteractListener(crateManager), this);
+        getServer().getPluginManager().registerEvents(new com.donututils.donutrep.crates.CrateInteractListener(crateManager, afkManager), this);
         registerCommand("crate", new com.donututils.donutrep.crates.CrateCommand(this, crateManager));
     }
 

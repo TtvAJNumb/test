@@ -29,6 +29,12 @@ commands:
     usage: /shards [player]
     permission: market.command.shards
     permission-message: "&cYou do not have permission to use /shards."
+  balance:
+    description: Check your Money balance, or another player's.
+    usage: /balance [player]
+    aliases: [bal, money]
+    permission: economy.command.balance
+    permission-message: "&cYou do not have permission to use /balance."
   # --- Market (dual-currency categorized shop) ---
   shop:
     description: Open the categorized item shop (Overworld/Nether/End/Shard Boutique), or sell from chat.
@@ -40,21 +46,28 @@ commands:
     usage: /shopadmin <reload|addshards <player> <amount>|setmultiplier <category> <value>> ...
     permission: market.admin
     permission-message: "&cYou do not have permission to manage the shop."
-  # --- Auction House (real player-to-player marketplace) ---
-  orders:
+  # --- Auction House (real player-to-player sell marketplace) ---
+  auctionhouse:
     description: List, browse, and buy player-listed items on the Auction House.
-    usage: /orders <sell <price>|list [page]|buy <id>|mine|cancel <id>>
-    permission: auctionhouse.command.orders
-    permission-message: "&cYou do not have permission to use /orders."
+    usage: /auctionhouse <sell <price>|list [page]|buy <id>|my|claims|cancel <id>|reload>
+    aliases: [ah]
+    permission: auctionhouse.command.auctionhouse
+    permission-message: "&cYou do not have permission to use /auctionhouse."
   shopedit:
     description: Staff moderation for the Auction House - force-remove a listing.
     usage: /shopedit remove <id>
     permission: auctionhouse.admin
     permission-message: "&cYou do not have permission to use /shopedit."
+  # --- Orders board (buy requests other players can fulfill) ---
+  orders:
+    description: Post buy requests other players can fulfill, or fulfill/collect/cancel one.
+    usage: /orders [create <price> <amount>|fulfill <id>|my|collect|cancel <id>|reload]
+    permission: orders.command.orders
+    permission-message: "&cYou do not have permission to use /orders."
   # --- Social ---
   chat:
-    description: Switch between the global and local chat channel, or check which one you're on.
-    usage: /chat [global|local]
+    description: Staff administration of global chat - mute/unmute/delay/clear.
+    usage: /chat <help|mute|unmute|delay <seconds>|clear>
     permission: social.command.chat
     permission-message: "&cYou do not have permission to use /chat."
   msg:
@@ -226,6 +239,9 @@ permissions:
   economy.command.pay:
     description: Allows sending Money to another player
     default: true
+  economy.command.balance:
+    description: Allows checking your own or another player's Money balance
+    default: true
   economy.admin:
     description: Allows administering the economy and granting/removing Shards
     default: op
@@ -238,15 +254,21 @@ permissions:
   market.admin:
     description: Allows administering the shop and granting Shards
     default: op
-  auctionhouse.command.orders:
+  auctionhouse.command.auctionhouse:
     description: Allows listing, browsing, and buying on the Auction House
     default: true
   auctionhouse.admin:
     description: Allows force-removing any Auction House listing
     default: op
-  social.command.chat:
-    description: Allows switching chat channels
+  orders.command.orders:
+    description: Allows posting, fulfilling, and collecting on the Orders board
     default: true
+  social.command.chat:
+    description: Allows administering global chat (mute/unmute/delay/clear)
+    default: op
+  social.chat.bypass:
+    description: Exempts a player from global chat mute/slow-mode
+    default: op
   social.command.msg:
     description: Allows sending and replying to private messages
     default: true

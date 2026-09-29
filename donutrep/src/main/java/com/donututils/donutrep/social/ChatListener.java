@@ -6,47 +6,39 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.AsyncPlayerChatEvent;
 
-import java.util.Iterator;
-import java.util.function.DoubleSupplier;
-
-/** Enforces the sender's chosen chat channel (see {@link ChatManager}/{@link ChatCommand}) and
- * ignore lists on every chat message: LOCAL trims recipients down to those within
- * local-chat-radius-blocks and same world, and anyone ignoring the sender is dropped from the
- * recipient list regardless of channel. */
+/** Enforces global chat mute/slow-mode (see {@link GlobalChatManager}/{@link ChatCommand}) and
+ * ignore lists on every chat message. */
 public final class ChatListener implements Listener {
 
-    private final ChatManager chatManager;
+    private final GlobalChatManager globalChatManager;
     private final IgnoreManager ignoreManager;
-    private final DoubleSupplier localRadius;
 
-    public ChatListener(ChatManager chatManager, IgnoreManager ignoreManager, DoubleSupplier localRadius) {
-        this.chatManager = chatManager;
+    public ChatListener(GlobalChatManager globalChatManager, IgnoreManager ignoreManager) {
+        this.globalChatManager = globalChatManager;
         this.ignoreManager = ignoreManager;
-        this.localRadius = localRadius;
     }
 
     @EventHandler
     public void onChat(AsyncPlayerChatEvent event) {
         Player sender = event.getPlayer();
-        ChatManager.Channel channel = chatManager.channelOf(sender.getUniqueId());
 
-        if (channel == ChatManager.Channel.LOCAL) {
-            double radius = localRadius.getAsDouble();
-            event.setFormat(ChatColor.GRAY + "[L] " + ChatColor.RESET + "%1$s" + ChatColor.GRAY + ": " + ChatColor.RESET + "%2$s");
-            Iterator<Player> iterator = event.getRecipients().iterator();
-            while (iterator.hasNext()) {
-                Player recipient = iterator.next();
-                if (recipient.equals(sender)) {
-                    continue;
-                }
-                if (!recipient.getWorld().equals(sender.getWorld())
-                        || recipient.getLocation().distance(sender.getLocation()) > radius) {
-                    iterator.remove();
-                }
-            }
+        if (globalChatManager.isMuted() && !sender.hasPermission("social.chat.bypass")) {
+            event.setCancelled(true);
+            sender.sendMessage(color("&cChat is currently muted by staff."));
+            return;
+        }
+
+        if (!sender.hasPermission("social.chat.bypass") && !globalChatManager.checkAndRecordDelay(sender.getUniqueId())) {
+            event.setCancelled(true);
+            sender.sendMessage(color("&cYou're chatting too fast - slow down."));
+            return;
         }
 
         event.getRecipients().removeIf(recipient -> !recipient.equals(sender)
                 && ignoreManager.isIgnoring(recipient.getUniqueId(), sender.getUniqueId()));
+    }
+
+    private static String color(String message) {
+        return ChatColor.translateAlternateColorCodes('&', message);
     }
 }

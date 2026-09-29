@@ -1,5 +1,6 @@
 package com.donututils.donutrep.pvp;
 
+import com.donututils.donutrep.afk.AfkManager;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.entity.Player;
@@ -10,14 +11,17 @@ import java.util.UUID;
 
 /** Random-opponent matchmaking for /queue: the moment two players are waiting, they're paired into a
  * duel automatically (via DuelManager, skipping the challenge/accept handshake since both sides
- * already opted in by queueing). */
+ * already opted in by queueing). AFK players are never paired (and get dropped from the queue if
+ * they go AFK while waiting), so a macro can't sit in queue collecting free duel outcomes. */
 public final class DuelQueueManager {
 
     private final DuelManager duelManager;
+    private final AfkManager afkManager;
     private final LinkedHashSet<UUID> waiting = new LinkedHashSet<>();
 
-    public DuelQueueManager(DuelManager duelManager) {
+    public DuelQueueManager(DuelManager duelManager, AfkManager afkManager) {
         this.duelManager = duelManager;
+        this.afkManager = afkManager;
     }
 
     public boolean isQueued(UUID playerId) {
@@ -27,6 +31,9 @@ public final class DuelQueueManager {
     public String join(Player player) {
         if (duelManager.isInDuel(player.getUniqueId())) {
             return "You're already in a duel.";
+        }
+        if (afkManager.isAfk(player.getUniqueId())) {
+            return "You can't queue while AFK.";
         }
         if (!waiting.add(player.getUniqueId())) {
             return "You're already queued.";
@@ -41,6 +48,7 @@ public final class DuelQueueManager {
     }
 
     private void tryPair() {
+        waiting.removeIf(afkManager::isAfk);
         if (waiting.size() < 2) {
             return;
         }
