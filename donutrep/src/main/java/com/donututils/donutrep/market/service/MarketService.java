@@ -2,6 +2,7 @@ package com.donututils.donutrep.market.service;
 
 import com.donututils.donutrep.economy.EconomyManager;
 import com.donututils.donutrep.economy.ShardManager;
+import com.donututils.donutrep.market.SellLedger;
 import com.donututils.donutrep.market.config.BoutiqueItem;
 import com.donututils.donutrep.market.config.CatalogEntry;
 import com.donututils.donutrep.market.config.MarketConfig;
@@ -33,11 +34,12 @@ public final class MarketService {
     private final EconomyManager economy;
     private final ShardManager shardManager;
     private final Supplier<MarketConfig> configSupplier;
+    private final SellLedger sellLedger;
 
     private final Map<String, Long> lastTradeAtMillis = new HashMap<>();
 
     public MarketService(List<CatalogEntry> catalog, MarketPricingEngine pricing, EconomyManager economy,
-                          ShardManager shardManager, Supplier<MarketConfig> configSupplier) {
+                          ShardManager shardManager, Supplier<MarketConfig> configSupplier, SellLedger sellLedger) {
         this.byMaterial = new HashMap<>();
         for (CatalogEntry entry : catalog) {
             byMaterial.put(entry.material().name(), entry);
@@ -46,6 +48,7 @@ public final class MarketService {
         this.economy = economy;
         this.shardManager = shardManager;
         this.configSupplier = configSupplier;
+        this.sellLedger = sellLedger;
     }
 
     public CatalogEntry entryFor(Material material) {
@@ -85,7 +88,39 @@ public final class MarketService {
         double price = pricing.sellPrice(entry) * quantity;
         economy.depositPlayer(player, price);
         pricing.onSell(material, quantity);
+        sellLedger.record(player, material, quantity, price);
         return new TradeResult(true, "Sold " + quantity + "x " + displayName(material) + " for " + formatMoney(price) + ".");
+    }
+
+    /** Sells every sellable item currently in the player's inventory (all catalog entries at once) -
+     * used by /sellall. */
+    public TradeResult sellAllInventory(Player player) {
+        Map<Material, Integer> counts = new HashMap<>();
+        for (ItemStack stack : player.getInventory().getContents()) {
+            if (stack == null) {
+                continue;
+            }
+            if (byMaterial.containsKey(stack.getType().name())) {
+                counts.merge(stack.getType(), stack.getAmount(), Integer::sum);
+            }
+        }
+        if (counts.isEmpty()) {
+            return TradeResult.fail("You have nothing sellable.");
+        }
+        double total = 0;
+        int itemTypesSold = 0;
+        for (Map.Entry<Material, Integer> held : counts.entrySet()) {
+            CatalogEntry entry = entryFor(held.getKey());
+            double expected = entry != null ? pricing.sellPrice(entry) * held.getValue() : 0;
+            TradeResult result = sell(player, held.getKey(), held.getValue());
+            if (result.success()) {
+                itemTypesSold++;
+                total += expected;
+            }
+        }
+        return new TradeResult(itemTypesSold > 0, itemTypesSold > 0
+                ? "Sold " + itemTypesSold + " item type(s) for a total of " + formatMoney(total) + "."
+                : "Nothing could be sold (cooldown?).");
     }
 
     /** Sells every unit of this material the player is currently carrying (used by the shift-click

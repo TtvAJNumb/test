@@ -99,6 +99,8 @@ public final class DonutREPPlugin extends JavaPlugin {
     private List<CatalogEntry> marketCatalog;
     private MarketPriceStore marketPriceStore;
     private MarketPricingEngine marketPricingEngine;
+    private com.donututils.donutrep.market.db.DatabaseManager marketDatabase;
+    private com.donututils.donutrep.market.SellLedger sellLedger;
     private MarketService marketService;
     private MarketGuiService marketGuiService;
     private volatile MarketConfig marketConfig;
@@ -134,6 +136,14 @@ public final class DonutREPPlugin extends JavaPlugin {
     private RtpManager rtpManager;
     private RtpQueueService rtpQueueService;
     private volatile RtpConfig rtpConfig;
+
+    // ── Warps / Portals ──────────────────────────────────────────────────────
+    private com.donututils.donutrep.warps.db.DatabaseManager warpsDatabase;
+    private com.donututils.donutrep.warps.WarpManager warpManager;
+    private com.donututils.donutrep.warps.PortalManager portalManager;
+
+    // ── TPA ──────────────────────────────────────────────────────────────────
+    private com.donututils.donutrep.tpa.TpaManager tpaManager;
 
     // ── PvP (duels) ──────────────────────────────────────────────────────────
     private DuelManager duelManager;
@@ -181,6 +191,8 @@ public final class DonutREPPlugin extends JavaPlugin {
         setupHomes();
         setupAfk();
         setupTravel();
+        setupWarps();
+        setupTpa();
         setupPvp();
         setupTeams();
         setupCrates();
@@ -207,6 +219,9 @@ public final class DonutREPPlugin extends JavaPlugin {
         if (marketPricingEngine != null) {
             marketPricingEngine.saveAll();
         }
+        if (marketDatabase != null) {
+            marketDatabase.shutdown();
+        }
 
         if (auctionHouseDatabase != null) {
             auctionHouseDatabase.shutdown();
@@ -222,6 +237,9 @@ public final class DonutREPPlugin extends JavaPlugin {
         }
         cancel(afkSweepTask);
         cancel(afkKickTask);
+        if (warpsDatabase != null) {
+            warpsDatabase.shutdown();
+        }
         if (rtpQueueService != null) {
             rtpQueueService.stop();
         }
@@ -302,7 +320,9 @@ public final class DonutREPPlugin extends JavaPlugin {
         marketCatalog = ItemCatalog.generate();
         marketPriceStore = new MarketPriceStore(getDataFolder(), getLogger());
         marketPricingEngine = new MarketPricingEngine(marketPriceStore, this::getMarketConfig);
-        marketService = new MarketService(marketCatalog, marketPricingEngine, economyManager, shardManager, this::getMarketConfig);
+        marketDatabase = new com.donututils.donutrep.market.db.DatabaseManager(getDataFolder(), getLogger());
+        sellLedger = new com.donututils.donutrep.market.SellLedger(this, marketDatabase);
+        marketService = new MarketService(marketCatalog, marketPricingEngine, economyManager, shardManager, this::getMarketConfig, sellLedger);
         marketGuiService = new MarketGuiService(marketCatalog, marketPricingEngine, marketService, this::getMarketConfig);
 
         getServer().getPluginManager().registerEvents(new MarketMenuClickListener(), this);
@@ -310,6 +330,14 @@ public final class DonutREPPlugin extends JavaPlugin {
         registerCommand("shop", new ShopCommand(marketGuiService, marketService));
         registerCommand("shopadmin", new ShopAdminCommand(this, shardManager));
         registerCommand("worth", new com.donututils.donutrep.market.command.WorthCommand(marketService, marketPricingEngine));
+        registerCommand("sell", new com.donututils.donutrep.market.command.SellCommand(marketGuiService));
+        registerCommand("sellhand", new com.donututils.donutrep.market.command.SellHandCommand(marketService));
+        registerCommand("sellall", new com.donututils.donutrep.market.command.SellAllCommand(marketService));
+        registerCommand("sellmulti", new com.donututils.donutrep.market.command.SellMultiCommand(marketService));
+        registerCommand("sellmultiplier", new com.donututils.donutrep.market.command.SellMultiplierCommand(this));
+        registerCommand("sellprogress", new com.donututils.donutrep.market.command.SellProgressCommand(sellLedger));
+        registerCommand("sellhistory", new com.donututils.donutrep.market.command.SellHistoryCommand(sellLedger));
+        registerCommand("topsell", new com.donututils.donutrep.market.command.TopSellCommand(sellLedger));
 
         startMarketTasks();
         getLogger().info("Market enabled with " + marketCatalog.size() + " catalog item(s) generated.");
@@ -492,6 +520,9 @@ public final class DonutREPPlugin extends JavaPlugin {
 
         registerCommand("rtp", new RtpCommand(rtpManager));
         registerCommand("rtpq", new RtpqCommand(rtpQueueService));
+        registerCommand("teleport", new com.donututils.donutrep.travel.TeleportCommand());
+        registerCommand("randomteleport", new com.donututils.donutrep.travel.RandomTeleportCommand(rtpManager));
+        registerCommand("findplayer", new com.donututils.donutrep.travel.FindPlayerCommand());
     }
 
     public RtpConfig getRtpConfig() {
@@ -508,6 +539,42 @@ public final class DonutREPPlugin extends JavaPlugin {
                 cfg.getInt("travel.rtp.max-concurrent-searches", 3),
                 cfg.getInt("travel.rtp.queue-interval-seconds", 5)
         );
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // WARPS / PORTALS (/warp /setwarp /delwarp /warpmanager /portalmanager)
+    // ═══════════════════════════════════════════════════════════════════════
+
+    private void setupWarps() {
+        warpsDatabase = new com.donututils.donutrep.warps.db.DatabaseManager(getDataFolder(), getLogger());
+        warpManager = new com.donututils.donutrep.warps.WarpManager(this, warpsDatabase);
+        portalManager = new com.donututils.donutrep.warps.PortalManager(this, warpsDatabase);
+
+        getServer().getPluginManager().registerEvents(
+                new com.donututils.donutrep.warps.PortalMoveListener(portalManager, warpManager), this);
+
+        registerCommand("warp", new com.donututils.donutrep.warps.WarpCommand(warpManager));
+        registerCommand("setwarp", new com.donututils.donutrep.warps.SetWarpCommand(warpManager));
+        registerCommand("delwarp", new com.donututils.donutrep.warps.DelWarpCommand(warpManager));
+        registerCommand("warpmanager", new com.donututils.donutrep.warps.WarpManagerCommand(warpManager));
+        registerCommand("portalmanager", new com.donututils.donutrep.warps.PortalManagerCommand(portalManager));
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // TPA (/tpa /tpahere /tpaccept /tpadeny /tpacancel /tpauto /tpahereauto)
+    // ═══════════════════════════════════════════════════════════════════════
+
+    private void setupTpa() {
+        long timeoutMillis = getConfig().getInt("tpa.request-timeout-seconds", 60) * 1000L;
+        tpaManager = new com.donututils.donutrep.tpa.TpaManager(timeoutMillis);
+
+        registerCommand("tpa", new com.donututils.donutrep.tpa.TpaCommand(tpaManager));
+        registerCommand("tpahere", new com.donututils.donutrep.tpa.TpaHereCommand(tpaManager));
+        registerCommand("tpaccept", new com.donututils.donutrep.tpa.TpAcceptCommand(tpaManager));
+        registerCommand("tpadeny", new com.donututils.donutrep.tpa.TpaDenyCommand(tpaManager));
+        registerCommand("tpacancel", new com.donututils.donutrep.tpa.TpaCancelCommand(tpaManager));
+        registerCommand("tpauto", new com.donututils.donutrep.tpa.TpAutoCommand(tpaManager));
+        registerCommand("tpahereauto", new com.donututils.donutrep.tpa.TpaHereAutoCommand(tpaManager));
     }
 
     // ═══════════════════════════════════════════════════════════════════════

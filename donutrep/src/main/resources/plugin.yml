@@ -76,6 +76,46 @@ commands:
     usage: /worth [material]
     permission: market.command.shop
     permission-message: "&cYou do not have permission to use /worth."
+  sell:
+    description: Open the sell/shop menu.
+    usage: /sell
+    permission: market.command.shop
+    permission-message: "&cYou do not have permission to use /sell."
+  sellhand:
+    description: Sell the item in your hand.
+    usage: /sellhand [amount]
+    permission: market.command.shop
+    permission-message: "&cYou do not have permission to use /sellhand."
+  sellall:
+    description: Sell every sellable item in your inventory.
+    usage: /sellall
+    permission: market.command.shop
+    permission-message: "&cYou do not have permission to use /sellall."
+  sellmulti:
+    description: Sell a specific amount of a specific material from your inventory.
+    usage: /sellmulti <material> <amount>
+    permission: market.command.shop
+    permission-message: "&cYou do not have permission to use /sellmulti."
+  sellmultiplier:
+    description: View, or (admin) set, the Market's sell-back multiplier.
+    usage: /sellmultiplier [value]
+    permission: market.command.shop
+    permission-message: "&cYou do not have permission to use /sellmultiplier."
+  sellprogress:
+    description: View lifetime selling stats - items sold and Money earned.
+    usage: /sellprogress [player]
+    permission: market.command.shop
+    permission-message: "&cYou do not have permission to use /sellprogress."
+  sellhistory:
+    description: View your most recent sell transactions.
+    usage: /sellhistory
+    permission: market.command.shop
+    permission-message: "&cYou do not have permission to use /sellhistory."
+  topsell:
+    description: View the top sellers leaderboard.
+    usage: /topsell
+    permission: market.command.shop
+    permission-message: "&cYou do not have permission to use /topsell."
   # --- Auction House (real player-to-player sell marketplace) ---
   auctionhouse:
     description: List, browse, and buy player-listed items on the Auction House.
@@ -183,6 +223,83 @@ commands:
     usage: /rtpq
     permission: travel.command.rtp
     permission-message: "&cYou do not have permission to use /rtpq."
+  teleport:
+    description: Teleport a player to a target (or to you).
+    usage: /teleport <player> [target]
+    permission: travel.admin
+    permission-message: "&cYou do not have permission to use /teleport."
+  randomteleport:
+    description: Force another player through a random teleport.
+    usage: /randomteleport <player>
+    permission: travel.admin
+    permission-message: "&cYou do not have permission to use /randomteleport."
+  findplayer:
+    description: Show a player's current world and coordinates.
+    usage: /findplayer <player>
+    permission: travel.admin
+    permission-message: "&cYou do not have permission to use /findplayer."
+  # --- Warps / Portals ---
+  warp:
+    description: Teleport to a named warp, or list every warp.
+    usage: /warp [name]
+    permission: warps.command.warp
+    permission-message: "&cYou do not have permission to use /warp."
+  setwarp:
+    description: Create or update a warp at your current location.
+    usage: /setwarp <name>
+    permission: warps.admin
+    permission-message: "&cYou do not have permission to use /setwarp."
+  delwarp:
+    description: Delete a warp.
+    usage: /delwarp <name>
+    permission: warps.admin
+    permission-message: "&cYou do not have permission to use /delwarp."
+  warpmanager:
+    description: Admin overview of every warp, with coordinates.
+    usage: /warpmanager [delete <name>]
+    permission: warps.admin
+    permission-message: "&cYou do not have permission to use /warpmanager."
+  portalmanager:
+    description: Define physical portal regions that teleport players to a warp on contact.
+    usage: /portalmanager <pos1|pos2|create <warp>|delete <id>|list>
+    permission: warps.admin
+    permission-message: "&cYou do not have permission to use /portalmanager."
+  # --- TPA ---
+  tpa:
+    description: Request to teleport to another player.
+    usage: /tpa <player>
+    permission: tpa.command.tpa
+    permission-message: "&cYou do not have permission to use /tpa."
+  tpahere:
+    description: Request that another player teleport to you.
+    usage: /tpahere <player>
+    permission: tpa.command.tpa
+    permission-message: "&cYou do not have permission to use /tpahere."
+  tpaccept:
+    description: Accept a pending teleport request.
+    usage: /tpaccept [player]
+    permission: tpa.command.tpa
+    permission-message: "&cYou do not have permission to use /tpaccept."
+  tpadeny:
+    description: Deny a pending teleport request.
+    usage: /tpadeny [player]
+    permission: tpa.command.tpa
+    permission-message: "&cYou do not have permission to use /tpadeny."
+  tpacancel:
+    description: Cancel every teleport request you've sent.
+    usage: /tpacancel
+    permission: tpa.command.tpa
+    permission-message: "&cYou do not have permission to use /tpacancel."
+  tpauto:
+    description: Toggle auto-accepting incoming /tpa requests.
+    usage: /tpauto
+    permission: tpa.command.tpa
+    permission-message: "&cYou do not have permission to use /tpauto."
+  tpahereauto:
+    description: Toggle auto-accepting incoming /tpahere requests.
+    usage: /tpahereauto
+    permission: tpa.command.tpa
+    permission-message: "&cYou do not have permission to use /tpahereauto."
   # --- PvP ---
   duel:
     description: Challenge a player to a 1v1 duel, or accept/decline a pending challenge.
@@ -322,6 +439,18 @@ permissions:
     default: op
   travel.command.rtp:
     description: Allows random-teleporting
+    default: true
+  travel.admin:
+    description: Allows /teleport, /randomteleport, and /findplayer
+    default: op
+  warps.command.warp:
+    description: Allows teleporting to warps
+    default: true
+  warps.admin:
+    description: Allows creating, deleting, and managing warps and portals
+    default: op
+  tpa.command.tpa:
+    description: Allows sending and answering teleport requests
     default: true
   pvp.command.duel:
     description: Allows dueling, queueing, and leaving

@@ -129,6 +129,14 @@ travel:
     queue-interval-seconds: 5
 
 # ═══════════════════════════════════════════════════════════════════════════════
+# TPA - player-to-player teleport requests (/tpa, /tpahere, /tpaccept, /tpadeny,
+# /tpacancel, /tpauto, /tpahereauto).
+# ═══════════════════════════════════════════════════════════════════════════════
+tpa:
+  # How long (seconds) a /tpa or /tpahere request stays open before it silently expires.
+  request-timeout-seconds: 60
+
+# ═══════════════════════════════════════════════════════════════════════════════
 # PVP - dueling (/duel, /queue, /leave).
 # ═══════════════════════════════════════════════════════════════════════════════
 pvp:
