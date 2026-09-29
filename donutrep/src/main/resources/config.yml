@@ -1,0 +1,277 @@
+# DonutREP - every subsystem's settings live in its own top-level section below.
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# ECONOMY - DonutREP's own internal Money balance manager. It registers itself
+# directly with Vault as the server's economy provider - no other economy plugin
+# needed, but Vault itself must still be installed. Shards (the premium currency)
+# share this same subsystem's database but have no separate config - they're just
+# granted via /addshards, /shopadmin addshards, or crate rewards.
+# ═══════════════════════════════════════════════════════════════════════════════
+economy:
+  # New players start with this Money balance the first time they join.
+  starting-balance: 1000.0
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# MARKET - the dual-currency (Money/Shards) categorized shop. Money is the primary
+# currency; Shards are a premium/milestone currency spent on cosmetic/black-market
+# goods in the Shard Boutique below. The main vanilla item catalog (every obtainable
+# block/item, sorted into Overworld/Nether/End and their sub-categories) is generated
+# automatically from the server's Material list at startup using the rarity tiers
+# below - it is not hand-typed here, since that would be thousands of near-duplicate
+# lines.
+# ═══════════════════════════════════════════════════════════════════════════════
+market:
+  gui:
+    title: "&8Server Market"
+
+  # Every generated catalog item's BASE buy price is base-money-value-per-rarity-tier times
+  # this category's multiplier - "base" because real-time supply/demand pricing (see
+  # dynamic-pricing below) then moves it up or down from there as people actually trade.
+  category-multipliers:
+    wood-and-forestry: 1.0
+    agriculture-and-crops: 1.0
+    ores-and-stone: 1.0
+    mob-drops: 1.2
+    nether: 1.8
+    end: 3.0
+
+  # Fraction of (current, dynamic) buy price a player gets back selling to the market.
+  sell-back-fraction: 0.4
+
+  # Minimum seconds between transactions per player, per item (script/macro sanity check).
+  transaction-cooldown-seconds: 1
+
+  # Hard cap on quantity per single buy/sell transaction.
+  max-quantity-per-transaction: 6400
+
+  # Prices are dynamic, not static - every material has its own live price factor (starting
+  # at 1.0x its base price) that this drives up when players buy it and down when they sell
+  # it. Persisted per-material to market-prices.yml so it survives restarts.
+  dynamic-pricing:
+    tick-interval-seconds: 60
+    buy-impact-percent: 0.05
+    sell-impact-percent: 0.05
+    decay-percent-per-tick: 2.0
+    min-price-factor: 0.25
+    max-price-factor: 4.0
+
+  # Shard Boutique - cosmetic and black-market vanilla items, priced in Shards, not Money.
+  shard-boutique:
+    black_market_totem:
+      display-name: "&5&lBlack-Market Totem of Undying"
+      description: "Rare - sold only for Shards, never for Money."
+      material: TOTEM_OF_UNDYING
+      price-shards: 500
+    black_market_elytra:
+      display-name: "&d&lBlack-Market Elytra"
+      description: "Rare - sold only for Shards, never for Money."
+      material: ELYTRA
+      price-shards: 750
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# AUCTION HOUSE - the real player-to-player marketplace (/orders to sell/browse/buy,
+# /shopedit for staff moderation).
+# ═══════════════════════════════════════════════════════════════════════════════
+auctionhouse:
+  # Hard cap on how many listings one player can have active at once.
+  max-listings-per-player: 10
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# SOCIAL - chat channels, private messages, and ignore lists.
+# ═══════════════════════════════════════════════════════════════════════════════
+social:
+  # How far (blocks) a LOCAL-channel chat message reaches. GLOBAL always reaches everyone.
+  local-chat-radius-blocks: 100.0
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# HOMES - per-player named homes and the single server-wide spawn point.
+# ═══════════════════════════════════════════════════════════════════════════════
+homes:
+  max-homes-per-player: 3
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# AFK - manual (/afk) and automatic idle-timeout AFK status.
+# ═══════════════════════════════════════════════════════════════════════════════
+afk:
+  # How long (seconds) a player can be idle before being automatically marked AFK.
+  # Set to 0 to disable automatic AFK (manual /afk still works).
+  timeout-seconds: 300
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# TRAVEL - random teleport (/rtp, /rtpq).
+# ═══════════════════════════════════════════════════════════════════════════════
+travel:
+  rtp:
+    # Random-teleport lands somewhere between these two distances (blocks) from 0,0.
+    min-radius: 200.0
+    max-radius: 5000.0
+    # Minimum time between a player's own /rtp uses.
+    cooldown-seconds: 30
+    # How many random X/Z picks to try before giving up and reporting failure.
+    max-attempts: 20
+    # How many /rtp safe-location searches can run at once before new /rtp requests are
+    # told to use /rtpq instead.
+    max-concurrent-searches: 3
+    # How often (seconds) the /rtpq queue processes its next waiting player.
+    queue-interval-seconds: 5
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# PVP - dueling (/duel, /queue, /leave).
+# ═══════════════════════════════════════════════════════════════════════════════
+pvp:
+  duel:
+    # How long (seconds) a /duel challenge stays open before it silently expires.
+    challenge-timeout-seconds: 30
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# CRATES - bind a chest/barrel/ender chest/shulker box to a crate with /crate bind,
+# then give players keys (or have StoreBridge run "crate set {player} <crate> <amount>"
+# to deliver keys from a store purchase). Matches the crate ids StoreBridge's real
+# config.yml already ships with (supernova/void/stellar) so no StoreBridge edits are
+# needed for crates specifically.
+# ═══════════════════════════════════════════════════════════════════════════════
+crates:
+  supernova:
+    display-name: "&6&lSupernova Crate"
+    key-material: TRIPWIRE_HOOK
+    key-custom-model-data: 90001
+    rewards:
+      money_small:
+        kind: MONEY
+        money-amount: 500.0
+        weight: 40
+        display-name: "&a$500"
+      money_big:
+        kind: MONEY
+        money-amount: 2500.0
+        weight: 10
+        display-name: "&a$2,500"
+      shards_small:
+        kind: SHARDS
+        shards-amount: 25
+        weight: 20
+        display-name: "&d25 Shards"
+      diamonds:
+        kind: ITEM
+        material: DIAMOND
+        item-amount-min: 1
+        item-amount-max: 4
+        weight: 20
+        display-name: "&bDiamonds"
+      netherite_scrap:
+        kind: ITEM
+        material: NETHERITE_SCRAP
+        item-amount-min: 1
+        item-amount-max: 1
+        weight: 5
+        display-name: "&5Netherite Scrap"
+
+  void:
+    display-name: "&8&lVoid Crate"
+    key-material: TRIPWIRE_HOOK
+    key-custom-model-data: 90002
+    rewards:
+      money_small:
+        kind: MONEY
+        money-amount: 1000.0
+        weight: 35
+        display-name: "&a$1,000"
+      shards_small:
+        kind: SHARDS
+        shards-amount: 50
+        weight: 25
+        display-name: "&d50 Shards"
+      emeralds:
+        kind: ITEM
+        material: EMERALD
+        item-amount-min: 4
+        item-amount-max: 12
+        weight: 25
+        display-name: "&2Emeralds"
+      totem:
+        kind: ITEM
+        material: TOTEM_OF_UNDYING
+        item-amount-min: 1
+        item-amount-max: 1
+        weight: 5
+        display-name: "&5&lTotem of Undying"
+      ancient_debris:
+        kind: ITEM
+        material: ANCIENT_DEBRIS
+        item-amount-min: 1
+        item-amount-max: 2
+        weight: 10
+        display-name: "&4Ancient Debris"
+
+  stellar:
+    display-name: "&b&lStellar Crate"
+    key-material: TRIPWIRE_HOOK
+    key-custom-model-data: 90003
+    rewards:
+      shards_big:
+        kind: SHARDS
+        shards-amount: 100
+        weight: 30
+        display-name: "&d100 Shards"
+      money_big:
+        kind: MONEY
+        money-amount: 5000.0
+        weight: 20
+        display-name: "&a$5,000"
+      netherite_ingot:
+        kind: ITEM
+        material: NETHERITE_INGOT
+        item-amount-min: 1
+        item-amount-max: 1
+        weight: 15
+        display-name: "&5Netherite Ingot"
+      elytra:
+        kind: ITEM
+        material: ELYTRA
+        item-amount-min: 1
+        item-amount-max: 1
+        weight: 5
+        display-name: "&d&lElytra"
+      enchanted_golden_apple:
+        kind: ITEM
+        material: ENCHANTED_GOLDEN_APPLE
+        item-amount-min: 1
+        item-amount-max: 2
+        weight: 10
+        display-name: "&6Enchanted Golden Apple"
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# ECOWATCH - posts a Discord alert whenever any player's Money balance jumps by at
+# least balance-jump-threshold between checks, so staff can spot duped/exploited
+# money quickly.
+# ═══════════════════════════════════════════════════════════════════════════════
+ecowatch:
+  discord:
+    webhook-url: ""
+    username: "EconomyWatchdog"
+  balance-jump-threshold: 10000.0
+  check-interval-seconds: 60
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# MARKETWATCH - /marketwatch reports total circulating Money via a Discord webhook
+# on request; /ahstats shows real Auction House activity (the highest-priced active
+# listings).
+# ═══════════════════════════════════════════════════════════════════════════════
+marketwatch:
+  discord:
+    webhook-url: ""
+    username: "MarketWatch"
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# PURCHASEALERT - polls the same store backend StoreBridge delivers from and posts
+# a Discord alert for each new purchase. backend_url and plugin_key MUST match the
+# values in StoreBridge's own config.yml exactly, or polling stays paused.
+# ═══════════════════════════════════════════════════════════════════════════════
+purchasealert:
+  backend_url: ""
+  plugin_key: ""
+  poll_interval_seconds: 15
+  order_limit: 10
+  discord:
+    webhook-url: ""
+    username: "Store Purchases"

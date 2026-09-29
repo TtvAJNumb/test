@@ -1,0 +1,131 @@
+package com.donututils.donutrep.help;
+
+import java.util.LinkedHashMap;
+import java.util.Map;
+
+/** Every /help topic's lines, keyed by the id players type after /help. Kept as one static registry
+ * rather than scattering "usage" strings across every subsystem, so /help stays a single source of
+ * truth admins can scan top to bottom. */
+public final class HelpTopics {
+
+    private HelpTopics() {
+    }
+
+    public static final Map<String, String[]> TOPICS = build();
+
+    private static Map<String, String[]> build() {
+        Map<String, String[]> t = new LinkedHashMap<>();
+
+        t.put("pay", new String[]{
+                "&6&lPay &7- /pay <player> <amount>",
+                "&7Send Money to another online player."
+        });
+        t.put("shards", new String[]{
+                "&6&lShards &7- /shards [player]",
+                "&7Check your (or another player's) Shards balance - the premium currency."
+        });
+        t.put("shop", new String[]{
+                "&6&lShop &7- /shop [sell hand]",
+                "&7Open the categorized item market (Overworld/Nether/End/Shard Boutique)."
+        });
+        t.put("orders", new String[]{
+                "&6&lOrders &7- /orders <sell <price>|list [page]|buy <id>|mine|cancel <id>>",
+                "&7The real player-to-player Auction House - list your items or buy others'."
+        });
+        t.put("shopedit", new String[]{
+                "&6&lShopEdit &7- /shopedit remove <id>",
+                "&7Staff moderation - force-remove any Auction House listing."
+        });
+        t.put("chat", new String[]{
+                "&6&lChat &7- /chat [global|local]",
+                "&7Switch which chat channel your messages go to."
+        });
+        t.put("msg", new String[]{
+                "&6&lMsg &7- /msg <player> <message> (alias: /pm)",
+                "&7Send a private message. /reply <message> answers your last conversation."
+        });
+        t.put("pm", t.get("msg"));
+        t.put("reply", new String[]{
+                "&6&lReply &7- /reply <message>",
+                "&7Answer whoever last messaged you (or you last messaged)."
+        });
+        t.put("ignore", new String[]{
+                "&6&lIgnore &7- /ignore <player>, /unignore <player>",
+                "&7Stop (or resume) receiving a player's private messages and chat lines."
+        });
+        t.put("home", new String[]{
+                "&6&lHome &7- /home [name], /homes, /sethome [name], /delhome <name>, /renamehome <old> <new>",
+                "&7Set and teleport to named homes."
+        });
+        t.put("homes", t.get("home"));
+        t.put("spawn", new String[]{
+                "&6&lSpawn &7- /spawn (players), /setspawn (admin)",
+                "&7Teleport to the server's spawn point, or set it to your current location."
+        });
+        t.put("afk", new String[]{
+                "&6&lAFK &7- /afk (toggle your own), /setafk <player> [on|off] (staff)",
+                "&7Mark yourself (or, for staff, another player) as away from keyboard."
+        });
+        t.put("rtp", new String[]{
+                "&6&lRTP &7- /rtp, /rtpq",
+                "&7Random-teleport to a nearby location. /rtpq queues you when too many are running."
+        });
+        t.put("duel", new String[]{
+                "&6&lDuel &7- /duel <player|accept|decline>, /queue, /leave",
+                "&7Challenge a player to a 1v1, or /queue for a random opponent. /leave forfeits."
+        });
+        t.put("queue", t.get("duel"));
+        t.put("crate", new String[]{
+                "&6&lCrate &7- /crate <bind <id>|unbind|set <player> <crate> <amount>|list|reload>",
+                "&7Bind a chest/barrel/ender chest/shulker box to a crate, or give crate keys."
+        });
+        t.put("cratebind", t.get("crate"));
+        t.put("team", new String[]{
+                "&6&lTeam &7- /team <create <name>|disband|add <player>|remove <player>|leave|info [player]|list>",
+                "&7Form a team with friends - /teambaltop and /teamshardstop rank teams by it."
+        });
+        t.put("sus", new String[]{
+                "&6&lSus &7- /sus [player|reload]",
+                "&7Staff panel: browse online players, freeze/unfreeze, view inventory/ender chest."
+        });
+        t.put("ah", new String[]{
+                "&6&lAhStats &7- /ahstats",
+                "&7Shows real Auction House activity - the highest-priced active listings."
+        });
+        t.put("ahstats", t.get("ah"));
+        t.put("punishhistory", new String[]{
+                "&6&lPunishHistory &7- /punishhistory [player]",
+                "&7View a player's staff notes."
+        });
+        t.put("note", new String[]{
+                "&6&lNote &7- /note <add|remove|list> <player> [text|index]",
+                "&7Manage staff notes on a player."
+        });
+        t.put("ecowatch", new String[]{
+                "&6&lEcoWatch &7- /ecowatch <reload|test|status>",
+                "&7Manage EconomyWatchdog's Discord balance-jump alerts."
+        });
+        t.put("marketwatch", new String[]{
+                "&6&lMarketWatch &7- /marketwatch <reload|status>",
+                "&7Check total circulating Money and MarketWatch's webhook status."
+        });
+        t.put("purchasealert", new String[]{
+                "&6&lPurchaseAlert &7- /purchasealert <reload|test|status>",
+                "&7Manage Discord alerts for new store purchases (reads StoreBridge's backend)."
+        });
+        t.put("teamleaderboard", new String[]{
+                "&6&lTeamLeaderboard &7- /teambaltop, /teamshardstop",
+                "&7Ranks teams by combined member Money or Shards."
+        });
+        t.put("addshards", new String[]{
+                "&6&lAddShards &7- /addshards <player> <amount>",
+                "&7Console command StoreBridge runs to deliver a Shards store package."
+        });
+        t.put("removeshards", new String[]{
+                "&6&lRemoveShards &7- /removeshards <player> <amount>",
+                "&7Console command StoreBridge runs on a chargeback to claw back Shards."
+        });
+
+        return t;
+    }
+}

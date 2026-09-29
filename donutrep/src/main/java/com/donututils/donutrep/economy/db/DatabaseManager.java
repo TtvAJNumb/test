@@ -1,0 +1,79 @@
+package com.donututils.donutrep.economy.db;
+
+import com.zaxxer.hikari.HikariConfig;
+import com.zaxxer.hikari.HikariDataSource;
+
+import java.io.File;
+import java.sql.Connection;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
+/**
+ * Owns the SQLite connection pool (HikariCP) and schema for DonutREP's own internal economy -
+ * a single Money balance per player (the Vault balance) plus the separate Shards premium currency.
+ * WAL mode is enabled so reads aren't blocked while a write is in flight.
+ */
+public final class DatabaseManager {
+
+    private final Logger logger;
+    private HikariDataSource dataSource;
+
+    public DatabaseManager(File dataFolder, Logger logger) {
+        this.logger = logger;
+        File dbFile = new File(dataFolder, "economy.db");
+        dataFolder.mkdirs();
+
+        HikariConfig config = new HikariConfig();
+        config.setJdbcUrl("jdbc:sqlite:" + dbFile.getAbsolutePath());
+        config.setMaximumPoolSize(4);
+        config.setPoolName("Economy-SQLite");
+        config.setConnectionTestQuery("SELECT 1");
+        this.dataSource = new HikariDataSource(config);
+
+        try (Connection connection = dataSource.getConnection(); Statement statement = connection.createStatement()) {
+            statement.execute("PRAGMA journal_mode=WAL;");
+            statement.execute("PRAGMA foreign_keys=ON;");
+        } catch (SQLException ex) {
+            logger.log(Level.WARNING, "Failed to set SQLite PRAGMAs", ex);
+        }
+
+        migrate();
+    }
+
+    public Connection getConnection() throws SQLException {
+        return dataSource.getConnection();
+    }
+
+    public void shutdown() {
+        if (dataSource != null) {
+            dataSource.close();
+        }
+    }
+
+    private void migrate() {
+        String[] statements = {
+                """
+                CREATE TABLE IF NOT EXISTS balances (
+                    player_id TEXT PRIMARY KEY,
+                    balance REAL NOT NULL DEFAULT 0
+                );
+                """,
+                """
+                CREATE TABLE IF NOT EXISTS shard_balances (
+                    player_id TEXT PRIMARY KEY,
+                    balance INTEGER NOT NULL DEFAULT 0
+                );
+                """
+        };
+
+        try (Connection connection = getConnection(); Statement statement = connection.createStatement()) {
+            for (String sql : statements) {
+                statement.execute(sql);
+            }
+        } catch (SQLException ex) {
+            logger.log(Level.SEVERE, "Failed to migrate the economy database schema", ex);
+        }
+    }
+}
