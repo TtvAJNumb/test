@@ -19,9 +19,13 @@ public final class HelpCommand implements CommandExecutor {
     private static final List<String> PLAYER_QUICKSTART = List.of(
             "&6&lWelcome! &7Here's how to get started:",
             "&e/shop &7- buy items from the End, Nether, Gear, Food, Shard, and Crate Keys categories.",
+            "&e/sell &7or &e/sellhand &7- sell what's in your hand for Money.",
+            "&e/ah &7- the Auction House - list your own items, or buy others'.",
             "&e/pay <player> <amount> &7- send Money to a friend.",
-            "&e/shards &7- check your Shards balance.",
+            "&e/sethome &7and &e/home &7- set and teleport back to your base.",
+            "&e/rtp &7- random-teleport somewhere new to explore.",
             "&e/team create <name> &7- form a team with friends.",
+            "&e/duel <player> &7or &e/queue &7- challenge someone, or find a random opponent.",
             "&7Run &e/help admin &7for the full admin command list if you're staff."
     );
 

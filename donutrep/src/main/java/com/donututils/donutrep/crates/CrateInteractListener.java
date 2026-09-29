@@ -1,5 +1,6 @@
 package com.donututils.donutrep.crates;
 
+import com.donututils.donutrep.afk.AfkManager;
 import org.bukkit.block.Block;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -10,9 +11,11 @@ import org.bukkit.event.player.PlayerInteractEvent;
 public final class CrateInteractListener implements Listener {
 
     private final CrateManager crateManager;
+    private final AfkManager afkManager;
 
-    public CrateInteractListener(CrateManager crateManager) {
+    public CrateInteractListener(CrateManager crateManager, AfkManager afkManager) {
         this.crateManager = crateManager;
+        this.afkManager = afkManager;
     }
 
     @EventHandler
@@ -30,6 +33,10 @@ public final class CrateInteractListener implements Listener {
         }
         Player player = event.getPlayer();
         event.setCancelled(true);
+        if (afkManager.isAfk(player.getUniqueId())) {
+            player.sendMessage("§cYou can't open crates while AFK.");
+            return;
+        }
         if (!crateManager.tryOpen(player, crateId)) {
             player.sendMessage("§cYou need a " + crateId + " crate key to open this.");
         }
