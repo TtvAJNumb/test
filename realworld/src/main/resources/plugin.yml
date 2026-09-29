@@ -115,6 +115,88 @@ commands:
     usage: /career [info|list|choose <job>|reopen|legacy|reload]
     permission: careers.command.career
     permission-message: "&cYou do not have permission to use /career."
+  # --- Ledger extras ---
+  pay:
+    description: Send Money to another online player.
+    usage: /pay <player> <amount>
+    permission: ledger.command.bank
+    permission-message: "&cYou do not have permission to use /pay."
+  addshards:
+    description: Grant Shards to a player (console command StoreBridge runs to deliver a package).
+    usage: /addshards <player> <amount>
+    permission: ledger.admin
+    permission-message: "&cYou do not have permission to use /addshards."
+  removeshards:
+    description: Remove Shards from a player (console command StoreBridge runs on a chargeback).
+    usage: /removeshards <player> <amount>
+    permission: ledger.admin
+    permission-message: "&cYou do not have permission to use /removeshards."
+  # --- Teams ---
+  team:
+    description: Create, disband, or manage a team.
+    usage: /team <create <name>|disband|add <player>|remove <player>|leave|info [player]|list>
+    permission: teams.command.team
+    permission-message: "&cYou do not have permission to use /team."
+  teambaltop:
+    description: Ranks teams by combined member Money.
+    usage: /teambaltop
+    permission: teams.command.leaderboard
+    permission-message: "&cYou do not have permission to use /teambaltop."
+  teamshardstop:
+    description: Ranks teams by combined member Shards.
+    usage: /teamshardstop
+    permission: teams.command.leaderboard
+    permission-message: "&cYou do not have permission to use /teamshardstop."
+  # --- Crates ---
+  crate:
+    description: Bind/unbind a crate block, give crate keys, or manage crates.
+    usage: /crate <bind <id>|unbind|set <player> <crate> <amount>|give|list|reload>
+    permission: crates.admin
+    permission-message: "&cYou do not have permission to use /crate."
+  # --- Staff ---
+  sus:
+    description: Staff panel - browse online players, freeze/unfreeze, view inventory/ender chest.
+    usage: /sus [player|reload]
+    permission: staff.command.sus
+    permission-message: "&cYou do not have permission to use /sus."
+  # --- EconomyWatchdog ---
+  ecowatch:
+    description: Manage EconomyWatchdog's Discord balance-jump alerts.
+    usage: /ecowatch <reload|test|status>
+    permission: economywatchdog.admin
+    permission-message: "&cYou do not have permission to use /ecowatch."
+  # --- MarketWatch ---
+  marketwatch:
+    description: Check total circulating Money and MarketWatch's webhook status.
+    usage: /marketwatch <reload|status>
+    permission: marketwatch.admin
+    permission-message: "&cYou do not have permission to use /marketwatch."
+  ahstats:
+    description: Shows StockMarket price history for a symbol (no auction house exists).
+    usage: /ahstats [symbol]
+    permission: marketwatch.command.ahstats
+    permission-message: "&cYou do not have permission to use /ahstats."
+  # --- PunishmentHistoryGUI ---
+  punishhistory:
+    description: View a player's court record and staff notes.
+    usage: /punishhistory [player]
+    permission: punishmenthistorygui.notes.view
+    permission-message: "&cYou do not have permission to use /punishhistory."
+  note:
+    description: Manage staff notes on a player.
+    usage: /note <add|remove|list> <player> [text|index]
+    permission: punishmenthistorygui.notes.view
+    permission-message: "&cYou do not have permission to use /note."
+  # --- PurchaseAlert ---
+  purchasealert:
+    description: Manage Discord alerts for new store purchases (reads StoreBridge's backend).
+    usage: /purchasealert <reload|test|status>
+    permission: purchasealert.admin
+    permission-message: "&cYou do not have permission to use /purchasealert."
+  # --- Help ---
+  help:
+    description: List admin help topics, view one, or (for players) show a quickstart guide.
+    usage: /help [topic]
 permissions:
   ledger.command.bank:
     description: Allows using the bank
@@ -190,4 +272,52 @@ permissions:
     default: true
   careers.admin:
     description: Allows reloading Careers' config
+    default: op
+  teams.command.team:
+    description: Allows creating and managing a team
+    default: true
+  teams.command.leaderboard:
+    description: Allows viewing the team leaderboards
+    default: true
+  crates.admin:
+    description: Allows binding/unbinding crates and giving crate keys
+    default: op
+  staff.command.sus:
+    description: Allows opening the staff panel
+    default: op
+  staff.freeze:
+    description: Allows freezing/unfreezing a player from the staff panel
+    default: op
+  staff.freezeexempt:
+    description: Exempts a player from being frozen
+    default: op
+  staff.invsee:
+    description: Allows viewing a player's inventory from the staff panel
+    default: op
+  staff.endersee:
+    description: Allows viewing a player's ender chest from the staff panel
+    default: op
+  economywatchdog.admin:
+    description: Allows managing EconomyWatchdog's Discord balance-jump alerts
+    default: op
+  marketwatch.admin:
+    description: Allows managing MarketWatch's Discord webhook
+    default: op
+  marketwatch.command.ahstats:
+    description: Allows checking StockMarket price history via /ahstats
+    default: true
+  punishmenthistorygui.notes.view:
+    description: Allows viewing a player's court record and staff notes
+    default: op
+  punishmenthistorygui.notes.add:
+    description: Allows adding a staff note to a player
+    default: op
+  punishmenthistorygui.notes.remove:
+    description: Allows removing a staff note from a player
+    default: op
+  purchasealert.admin:
+    description: Allows managing PurchaseAlert's Discord webhook
+    default: op
+  realworld.help.admin:
+    description: Shows the full admin /help topic list instead of the player quickstart
     default: op

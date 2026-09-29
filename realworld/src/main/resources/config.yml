@@ -640,3 +640,156 @@ careers:
     inheritance-percent: 10.0
     shard-bonus-per-legacy: 50
     wage-bonus-percent-per-legacy: 2.0
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# CRATES - bind a chest/barrel/ender chest/shulker box to a crate with /crate bind,
+# then give players keys (or have StoreBridge run "crate set {player} <crate> <amount>"
+# to deliver keys from a store purchase). Matches the crate ids StoreBridge's real
+# config.yml already ships with (supernova/void/stellar) so no StoreBridge edits are
+# needed for crates specifically.
+# ═══════════════════════════════════════════════════════════════════════════════
+crates:
+  supernova:
+    display-name: "&6&lSupernova Crate"
+    key-material: TRIPWIRE_HOOK
+    key-custom-model-data: 90001
+    rewards:
+      money_small:
+        kind: MONEY
+        money-amount: 500.0
+        weight: 40
+        display-name: "&a$500"
+      money_big:
+        kind: MONEY
+        money-amount: 2500.0
+        weight: 10
+        display-name: "&a$2,500"
+      shards_small:
+        kind: SHARDS
+        shards-amount: 25
+        weight: 20
+        display-name: "&d25 Shards"
+      diamonds:
+        kind: ITEM
+        material: DIAMOND
+        item-amount-min: 1
+        item-amount-max: 4
+        weight: 20
+        display-name: "&bDiamonds"
+      netherite_scrap:
+        kind: ITEM
+        material: NETHERITE_SCRAP
+        item-amount-min: 1
+        item-amount-max: 1
+        weight: 5
+        display-name: "&5Netherite Scrap"
+
+  void:
+    display-name: "&8&lVoid Crate"
+    key-material: TRIPWIRE_HOOK
+    key-custom-model-data: 90002
+    rewards:
+      money_small:
+        kind: MONEY
+        money-amount: 1000.0
+        weight: 35
+        display-name: "&a$1,000"
+      shards_small:
+        kind: SHARDS
+        shards-amount: 50
+        weight: 25
+        display-name: "&d50 Shards"
+      emeralds:
+        kind: ITEM
+        material: EMERALD
+        item-amount-min: 4
+        item-amount-max: 12
+        weight: 25
+        display-name: "&2Emeralds"
+      totem:
+        kind: ITEM
+        material: TOTEM_OF_UNDYING
+        item-amount-min: 1
+        item-amount-max: 1
+        weight: 5
+        display-name: "&5&lTotem of Undying"
+      ancient_debris:
+        kind: ITEM
+        material: ANCIENT_DEBRIS
+        item-amount-min: 1
+        item-amount-max: 2
+        weight: 10
+        display-name: "&4Ancient Debris"
+
+  stellar:
+    display-name: "&b&lStellar Crate"
+    key-material: TRIPWIRE_HOOK
+    key-custom-model-data: 90003
+    rewards:
+      shards_big:
+        kind: SHARDS
+        shards-amount: 100
+        weight: 30
+        display-name: "&d100 Shards"
+      money_big:
+        kind: MONEY
+        money-amount: 5000.0
+        weight: 20
+        display-name: "&a$5,000"
+      netherite_ingot:
+        kind: ITEM
+        material: NETHERITE_INGOT
+        item-amount-min: 1
+        item-amount-max: 1
+        weight: 15
+        display-name: "&5Netherite Ingot"
+      elytra:
+        kind: ITEM
+        material: ELYTRA
+        item-amount-min: 1
+        item-amount-max: 1
+        weight: 5
+        display-name: "&d&lElytra"
+      enchanted_golden_apple:
+        kind: ITEM
+        material: ENCHANTED_GOLDEN_APPLE
+        item-amount-min: 1
+        item-amount-max: 2
+        weight: 10
+        display-name: "&6Enchanted Golden Apple"
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# ECOWATCH - posts a Discord alert whenever any player's Money balance jumps by at
+# least balance-jump-threshold between checks, so staff can spot duped/exploited
+# money quickly.
+# ═══════════════════════════════════════════════════════════════════════════════
+ecowatch:
+  discord:
+    webhook-url: ""
+    username: "EconomyWatchdog"
+  balance-jump-threshold: 10000.0
+  check-interval-seconds: 60
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# MARKETWATCH - /marketwatch reports total circulating Money via a Discord webhook
+# on request; /ahstats repurposes the name to show StockMarket price history since
+# there is no real auction house in this plugin.
+# ═══════════════════════════════════════════════════════════════════════════════
+marketwatch:
+  discord:
+    webhook-url: ""
+    username: "MarketWatch"
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# PURCHASEALERT - polls the same store backend StoreBridge delivers from and posts
+# a Discord alert for each new purchase. backend_url and plugin_key MUST match the
+# values in StoreBridge's own config.yml exactly, or polling stays paused.
+# ═══════════════════════════════════════════════════════════════════════════════
+purchasealert:
+  backend_url: ""
+  plugin_key: ""
+  poll_interval_seconds: 15
+  order_limit: 10
+  discord:
+    webhook-url: ""
+    username: "Store Purchases"

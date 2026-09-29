@@ -211,6 +211,29 @@ public final class RealWorldPlugin extends JavaPlugin {
     private BukkitTask careersWageTask;
     private BukkitTask careersPlaytimeTask;
 
+    // ── Teams ────────────────────────────────────────────────────────────────
+    private com.donututils.realworld.teams.db.DatabaseManager teamsDatabase;
+    private com.donututils.realworld.teams.TeamManager teamManager;
+
+    // ── Crates ───────────────────────────────────────────────────────────────
+    private com.donututils.realworld.crates.db.DatabaseManager cratesDatabase;
+    private com.donututils.realworld.crates.CrateManager crateManager;
+    private volatile com.donututils.realworld.crates.CrateConfig crateConfig;
+
+    // ── Staff panel ──────────────────────────────────────────────────────────
+    private com.donututils.realworld.staff.FreezeManager freezeManager;
+
+    // ── EconomyWatchdog / MarketWatch / PurchaseAlert (Discord addons) ───────
+    private com.donututils.realworld.ecowatch.discord.DiscordWebhook ecoWatchWebhook;
+    private BukkitTask ecoWatchTask;
+    private com.donututils.realworld.marketwatch.discord.DiscordWebhook marketWatchWebhook;
+    private com.donututils.realworld.purchasealert.discord.DiscordWebhook purchaseAlertWebhook;
+    private BukkitTask purchaseAlertTask;
+
+    // ── PunishmentHistoryGUI ─────────────────────────────────────────────────
+    private com.donututils.realworld.punishhistory.db.DatabaseManager punishHistoryDatabase;
+    private com.donututils.realworld.punishhistory.NoteStore noteStore;
+
     @Override
     public void onEnable() {
         saveDefaultConfig();
@@ -235,8 +258,17 @@ public final class RealWorldPlugin extends JavaPlugin {
         setupMotors();
         setupMarket();
         setupCareers();
+        setupTeams();
+        setupCrates();
+        setupStaff();
+        setupEcoWatch();
+        setupMarketWatch();
+        setupPunishHistory();
+        setupPurchaseAlert();
+        registerCommand("help", new com.donututils.realworld.help.HelpCommand());
 
-        getLogger().info("RealWorld enabled - Ledger, StockMarket, Market, Municipal, Arsenal, Motors, and Careers are all live.");
+        getLogger().info("RealWorld enabled - Ledger, StockMarket, Market, Municipal, Arsenal, Motors, Careers, "
+                + "Teams, Crates, staff tools, and every watchdog/alert addon are all live.");
     }
 
     @Override
@@ -283,6 +315,18 @@ public final class RealWorldPlugin extends JavaPlugin {
         if (marketPricingEngine != null) {
             marketPricingEngine.saveAll();
         }
+
+        if (cratesDatabase != null) {
+            cratesDatabase.shutdown();
+        }
+        if (teamsDatabase != null) {
+            teamsDatabase.shutdown();
+        }
+        if (punishHistoryDatabase != null) {
+            punishHistoryDatabase.shutdown();
+        }
+        cancel(ecoWatchTask);
+        cancel(purchaseAlertTask);
     }
 
     private void cancel(BukkitTask task) {
@@ -325,6 +369,9 @@ public final class RealWorldPlugin extends JavaPlugin {
         registerCommand("corp", new CorpCommand(this, corporationManager, shareTradingManager));
         registerCommand("stock", new com.donututils.realworld.ledger.command.StockCommand(this, corporationManager, shareTradingManager, taxManager, economyProvider));
         registerCommand("ledgeradmin", new LedgerAdminCommand(this, loanManager));
+        registerCommand("pay", new com.donututils.realworld.ledger.command.PayCommand(economyProvider));
+        registerCommand("addshards", new com.donututils.realworld.ledger.command.AddShardsCommand(shardManager));
+        registerCommand("removeshards", new com.donututils.realworld.ledger.command.RemoveShardsCommand(shardManager));
 
         startLedgerTasks();
     }
@@ -982,4 +1029,208 @@ public final class RealWorldPlugin extends JavaPlugin {
         );
     }
 
+    // ═══════════════════════════════════════════════════════════════════════
+    // TEAMS
+    // ═══════════════════════════════════════════════════════════════════════
+
+    private void setupTeams() {
+        teamsDatabase = new com.donututils.realworld.teams.db.DatabaseManager(getDataFolder(), getLogger());
+        teamManager = new com.donututils.realworld.teams.TeamManager(this, teamsDatabase);
+
+        registerCommand("team", new com.donututils.realworld.teams.TeamCommand(teamManager));
+        registerCommand("teambaltop", new com.donututils.realworld.teams.TeamLeaderboardCommand(
+                teamManager, economyProvider, shardManager, com.donututils.realworld.teams.TeamLeaderboardCommand.Stat.MONEY));
+        registerCommand("teamshardstop", new com.donututils.realworld.teams.TeamLeaderboardCommand(
+                teamManager, economyProvider, shardManager, com.donututils.realworld.teams.TeamLeaderboardCommand.Stat.SHARDS));
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // CRATES
+    // ═══════════════════════════════════════════════════════════════════════
+
+    private void setupCrates() {
+        crateConfig = loadCrateConfig();
+        cratesDatabase = new com.donututils.realworld.crates.db.DatabaseManager(getDataFolder(), getLogger());
+        com.donututils.realworld.crates.CrateKeys crateKeys = new com.donututils.realworld.crates.CrateKeys(this);
+        com.donututils.realworld.crates.CrateItemFactory crateItemFactory = new com.donututils.realworld.crates.CrateItemFactory(crateKeys);
+        crateManager = new com.donututils.realworld.crates.CrateManager(this, cratesDatabase, crateKeys, crateItemFactory,
+                economyProvider, shardManager, this::getCrateConfig);
+        crateManager.respawnHolograms();
+
+        getServer().getPluginManager().registerEvents(new com.donututils.realworld.crates.CrateInteractListener(crateManager), this);
+        registerCommand("crate", new com.donututils.realworld.crates.CrateCommand(this, crateManager));
+    }
+
+    public void reloadCrates() {
+        reloadConfig();
+        crateConfig = loadCrateConfig();
+    }
+
+    public com.donututils.realworld.crates.CrateConfig getCrateConfig() {
+        return crateConfig;
+    }
+
+    private com.donututils.realworld.crates.CrateConfig loadCrateConfig() {
+        FileConfiguration cfg = getConfig();
+        Map<String, com.donututils.realworld.crates.CrateDefinition> crates = new LinkedHashMap<>();
+        ConfigurationSection cratesSection = cfg.getConfigurationSection("crates");
+        if (cratesSection != null) {
+            for (String id : cratesSection.getKeys(false)) {
+                ConfigurationSection s = cratesSection.getConfigurationSection(id);
+                if (s == null) {
+                    continue;
+                }
+                try {
+                    org.bukkit.Material keyMaterial = org.bukkit.Material.valueOf(s.getString("key-material", "TRIPWIRE_HOOK").toUpperCase(Locale.ROOT));
+                    List<com.donututils.realworld.crates.CrateReward> rewards = new ArrayList<>();
+                    ConfigurationSection rewardsSection = s.getConfigurationSection("rewards");
+                    if (rewardsSection != null) {
+                        for (String rewardId : rewardsSection.getKeys(false)) {
+                            ConfigurationSection r = rewardsSection.getConfigurationSection(rewardId);
+                            if (r == null) {
+                                continue;
+                            }
+                            try {
+                                com.donututils.realworld.crates.CrateReward.Kind kind =
+                                        com.donututils.realworld.crates.CrateReward.Kind.valueOf(r.getString("kind", "ITEM").toUpperCase(Locale.ROOT));
+                                org.bukkit.Material material = kind == com.donututils.realworld.crates.CrateReward.Kind.ITEM
+                                        ? org.bukkit.Material.valueOf(r.getString("material", "STONE").toUpperCase(Locale.ROOT)) : null;
+                                rewards.add(new com.donututils.realworld.crates.CrateReward(
+                                        kind, material,
+                                        r.getDouble("money-amount", 0.0),
+                                        r.getLong("shards-amount", 0),
+                                        r.getInt("item-amount-min", 1),
+                                        r.getInt("item-amount-max", 1),
+                                        r.getString("display-name", rewardId),
+                                        r.getInt("weight", 1)
+                                ));
+                            } catch (IllegalArgumentException ex) {
+                                getLogger().warning("Skipping reward '" + rewardId + "' in crate '" + id + "' - invalid config: " + ex.getMessage());
+                            }
+                        }
+                    }
+                    crates.put(id.toLowerCase(Locale.ROOT), new com.donututils.realworld.crates.CrateDefinition(
+                            id, s.getString("display-name", id), keyMaterial, s.getInt("key-custom-model-data", 0), rewards));
+                } catch (IllegalArgumentException ex) {
+                    getLogger().warning("Skipping crate '" + id + "' - invalid config: " + ex.getMessage());
+                }
+            }
+        }
+        return new com.donututils.realworld.crates.CrateConfig(crates);
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // STAFF PANEL (/sus)
+    // ═══════════════════════════════════════════════════════════════════════
+
+    private void setupStaff() {
+        freezeManager = new com.donututils.realworld.staff.FreezeManager();
+        com.donututils.realworld.staff.StaffPanel staffPanel = new com.donututils.realworld.staff.StaffPanel(freezeManager);
+
+        getServer().getPluginManager().registerEvents(new com.donututils.realworld.staff.FreezeListener(freezeManager), this);
+        getServer().getPluginManager().registerEvents(new com.donututils.realworld.staff.gui.StaffMenuClickListener(), this);
+        registerCommand("sus", new com.donututils.realworld.staff.SusCommand(staffPanel));
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // ECOWATCH
+    // ═══════════════════════════════════════════════════════════════════════
+
+    private void setupEcoWatch() {
+        ecoWatchWebhook = new com.donututils.realworld.ecowatch.discord.DiscordWebhook(this);
+        startEcoWatchTask();
+        registerCommand("ecowatch", new com.donututils.realworld.ecowatch.EcoWatchCommand(this, ecoWatchWebhook));
+    }
+
+    public void reloadEcoWatch() {
+        reloadConfig();
+        cancel(ecoWatchTask);
+        startEcoWatchTask();
+    }
+
+    private void startEcoWatchTask() {
+        FileConfiguration cfg = getConfig();
+        ecoWatchWebhook.configure(cfg.getString("ecowatch.discord.webhook-url", ""), cfg.getString("ecowatch.discord.username", "EconomyWatchdog"));
+        double threshold = cfg.getDouble("ecowatch.balance-jump-threshold", 10000.0);
+        com.donututils.realworld.ecowatch.BalanceWatcher watcher =
+                new com.donututils.realworld.ecowatch.BalanceWatcher(economyProvider, ecoWatchWebhook, () -> threshold);
+        long intervalTicks = Math.max(20L, cfg.getInt("ecowatch.check-interval-seconds", 60) * 20L);
+        ecoWatchTask = getServer().getScheduler().runTaskTimerAsynchronously(this, watcher, intervalTicks, intervalTicks);
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // MARKETWATCH
+    // ═══════════════════════════════════════════════════════════════════════
+
+    private void setupMarketWatch() {
+        marketWatchWebhook = new com.donututils.realworld.marketwatch.discord.DiscordWebhook(this);
+        marketWatchWebhook.configure(getConfig().getString("marketwatch.discord.webhook-url", ""),
+                getConfig().getString("marketwatch.discord.username", "MarketWatch"));
+        com.donututils.realworld.marketwatch.MarketWatchCommand marketWatchCommand =
+                new com.donututils.realworld.marketwatch.MarketWatchCommand(this, marketWatchWebhook, stockRegistry);
+        registerCommand("marketwatch", marketWatchCommand);
+        registerCommand("ahstats", new com.donututils.realworld.marketwatch.AhStatsCommand(marketWatchCommand));
+    }
+
+    public void reloadMarketWatch() {
+        reloadConfig();
+        marketWatchWebhook.configure(getConfig().getString("marketwatch.discord.webhook-url", ""),
+                getConfig().getString("marketwatch.discord.username", "MarketWatch"));
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // PUNISHMENT HISTORY / STAFF NOTES
+    // ═══════════════════════════════════════════════════════════════════════
+
+    private void setupPunishHistory() {
+        punishHistoryDatabase = new com.donututils.realworld.punishhistory.db.DatabaseManager(getDataFolder(), getLogger());
+        noteStore = new com.donututils.realworld.punishhistory.NoteStore(punishHistoryDatabase, getLogger());
+
+        registerCommand("punishhistory", new com.donututils.realworld.punishhistory.PunishHistoryCommand(courtManager, noteStore));
+        registerCommand("note", new com.donututils.realworld.punishhistory.NoteCommand(noteStore));
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // PURCHASE ALERT
+    // ═══════════════════════════════════════════════════════════════════════
+
+    private void setupPurchaseAlert() {
+        purchaseAlertWebhook = new com.donututils.realworld.purchasealert.discord.DiscordWebhook(this);
+        startPurchaseAlertTask();
+        registerCommand("purchasealert", new com.donututils.realworld.purchasealert.command.PurchaseAlertCommand(this));
+    }
+
+    public void reloadPurchaseAlert() {
+        reloadConfig();
+        cancel(purchaseAlertTask);
+        startPurchaseAlertTask();
+    }
+
+    public com.donututils.realworld.purchasealert.discord.DiscordWebhook getPurchaseAlertWebhook() {
+        return purchaseAlertWebhook;
+    }
+
+    private void startPurchaseAlertTask() {
+        FileConfiguration cfg = getConfig();
+        purchaseAlertWebhook.configure(cfg.getString("purchasealert.discord.webhook-url", ""),
+                cfg.getString("purchasealert.discord.username", "Store Purchases"));
+
+        String backendUrl = cfg.getString("purchasealert.backend_url", "");
+        String pluginKey = cfg.getString("purchasealert.plugin_key", "");
+        if (backendUrl.isBlank() || pluginKey.isBlank()) {
+            getLogger().warning("purchasealert.backend_url or purchasealert.plugin_key is not set - copy the same "
+                    + "two values from StoreBridge's own config.yml. Purchase polling is paused until then.");
+            return;
+        }
+        int orderLimit = Math.max(1, Math.min(25, cfg.getInt("purchasealert.order_limit", 10)));
+        com.donututils.realworld.purchasealert.http.BackendOrdersClient client =
+                new com.donututils.realworld.purchasealert.http.BackendOrdersClient(backendUrl, pluginKey);
+        com.donututils.realworld.purchasealert.config.AlertConfig alertConfig = new com.donututils.realworld.purchasealert.config.AlertConfig(
+                backendUrl, pluginKey, Math.max(5, cfg.getInt("purchasealert.poll_interval_seconds", 15)), orderLimit,
+                cfg.getString("purchasealert.discord.webhook-url", ""), cfg.getString("purchasealert.discord.username", "Store Purchases"));
+        com.donututils.realworld.purchasealert.watch.PurchaseWatcher watcher =
+                new com.donututils.realworld.purchasealert.watch.PurchaseWatcher(this, client, purchaseAlertWebhook, alertConfig);
+        long intervalTicks = Math.max(20L, alertConfig.pollIntervalSeconds() * 20L);
+        purchaseAlertTask = getServer().getScheduler().runTaskTimerAsynchronously(this, watcher, intervalTicks, intervalTicks);
+    }
 }

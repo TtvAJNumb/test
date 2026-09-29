@@ -54,6 +54,12 @@ public final class ShardManager {
         return balances.getOrDefault(playerId, 0L);
     }
 
+    /** Snapshot of every player this plugin currently knows a Shards balance for - used by
+     * TeamLeaderboard's shards ranking. */
+    public Map<UUID, Long> allBalances() {
+        return Map.copyOf(balances);
+    }
+
     public void credit(UUID playerId, long amount) {
         if (amount <= 0) {
             return;
