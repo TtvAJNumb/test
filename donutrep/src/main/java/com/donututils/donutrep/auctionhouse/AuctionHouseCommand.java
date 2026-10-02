@@ -156,12 +156,18 @@ public final class AuctionHouseCommand implements CommandExecutor {
             return;
         }
         AuctionListing listing = auctionHouse.find(id);
-        if (listing == null || !listing.sellerId().equals(player.getUniqueId())) {
+        if (listing == null) {
+            player.sendMessage(color("&cNo listing #" + id + "."));
+            return;
+        }
+        boolean owner = listing.sellerId().equals(player.getUniqueId());
+        if (!owner && !player.hasPermission("auctionhouse.admin")) {
             player.sendMessage(color("&cYou don't have a listing #" + id + "."));
             return;
         }
-        auctionHouse.cancel(id, player);
-        player.sendMessage(color("&aListing #" + id + " cancelled and returned to your inventory."));
+        auctionHouse.cancel(id, owner ? player : org.bukkit.Bukkit.getPlayer(listing.sellerId()));
+        player.sendMessage(color("&aListing #" + id + " cancelled"
+                + (owner ? " and returned to your inventory." : " and returned to the seller if they're online.")));
     }
 
     private static String displayName(AuctionListing listing) {

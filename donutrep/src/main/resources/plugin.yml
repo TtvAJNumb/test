@@ -12,22 +12,22 @@ commands:
   pay:
     description: Send Money to another online player.
     usage: /pay <player> <amount>
-    permission: economy.command.pay
+    permission: ultimatedonutsmp.command.pay
     permission-message: "&cYou do not have permission to use /pay."
   addshards:
     description: Grant Shards to a player (console command StoreBridge runs to deliver a package).
     usage: /addshards <player> <amount>
-    permission: economy.admin
+    permission: ultimatedonutsmp.command.addshards
     permission-message: "&cYou do not have permission to use /addshards."
   removeshards:
     description: Remove Shards from a player (console command StoreBridge runs on a chargeback).
     usage: /removeshards <player> <amount>
-    permission: economy.admin
+    permission: ultimatedonutsmp.command.removeshards
     permission-message: "&cYou do not have permission to use /removeshards."
   shards:
-    description: Check your Shards balance, or another player's.
-    usage: /shards [player]
-    permission: market.command.shards
+    description: Check your own Shards balance (no player lookup, matching real UDS exactly).
+    usage: /shards
+    permission: ultimatedonutsmp.command.shards
     permission-message: "&cYou do not have permission to use /shards."
   balance:
     description: Check your Money balance, or another player's.
@@ -66,10 +66,10 @@ commands:
     usage: /shop
     permission: market.command.shop
     permission-message: "&cYou do not have permission to use /shop."
-  shopadmin:
-    description: Administer the shop.
-    usage: /shopadmin reload
-    permission: market.admin
+  shopedit:
+    description: Reload the shop's config.yml entries (real UDS's actual command name for this job).
+    usage: /shopedit reload
+    permission: ultimatedonutsmp.admin.shop
     permission-message: "&cYou do not have permission to manage the shop."
   # --- Sell (priced from real UDS worth.yml - separate from /shop's buy catalog) ---
   worth:
@@ -119,16 +119,11 @@ commands:
     permission-message: "&cYou do not have permission to use /topsell."
   # --- Auction House (real player-to-player sell marketplace) ---
   auctionhouse:
-    description: List, browse, and buy player-listed items on the Auction House.
+    description: List, browse, and buy player-listed items on the Auction House. Staff with auctionhouse.admin can cancel anyone's listing.
     usage: /auctionhouse <sell <price>|list [page]|buy <id>|my|claims|cancel <id>|reload>
     aliases: [ah]
     permission: auctionhouse.command.auctionhouse
     permission-message: "&cYou do not have permission to use /auctionhouse."
-  shopedit:
-    description: Staff moderation for the Auction House - force-remove a listing.
-    usage: /shopedit remove <id>
-    permission: auctionhouse.admin
-    permission-message: "&cYou do not have permission to use /shopedit."
   # --- Orders board (buy requests other players can fulfill) ---
   orders:
     description: Post buy requests other players can fulfill, or fulfill/collect/cancel one.
@@ -335,9 +330,9 @@ commands:
     permission-message: "&cYou do not have permission to use /teamshardstop."
   # --- Crates ---
   crate:
-    description: Bind/unbind a crate block, give crate keys, or manage crates.
+    description: Bind/unbind a crate block, give crate keys, or manage crates. Note - this binds an existing chest/barrel/etc to a crate (the CrateBindAddon feature); it is not real UDS's crate-creation command of the same name.
     usage: /crate <bind <id>|unbind|set <player> <crate> <amount>|give|list|reload>
-    permission: crates.admin
+    permission: ultimatedonutsmp.command.crate
     permission-message: "&cYou do not have permission to use /crate."
   # --- Staff ---
   sus:
@@ -461,23 +456,32 @@ commands:
     description: List admin help topics, view one, or (for players) show a quickstart guide.
     usage: /help [topic]
 permissions:
-  economy.command.pay:
+  ultimatedonutsmp.command.pay:
     description: Allows sending Money to another player
     default: true
   economy.command.balance:
     description: Allows checking your own or another player's Money balance
     default: true
   economy.admin:
-    description: Allows administering the economy and granting/removing Shards
+    description: Allows administering Money (addmoney/removemoney/setmoney)
+    default: op
+  ultimatedonutsmp.command.addshards:
+    description: Allows running /addshards (gate - the grant itself also needs ultimatedonutsmp.admin.shards)
+    default: op
+  ultimatedonutsmp.command.removeshards:
+    description: Allows running /removeshards (gate - the removal itself also needs ultimatedonutsmp.admin.shards)
+    default: op
+  ultimatedonutsmp.command.shards:
+    description: Allows checking your own Shards balance
+    default: true
+  ultimatedonutsmp.admin.shards:
+    description: Allows granting/removing Shards via /addshards and /removeshards, and the /shards everywhere admin subcommand
     default: op
   market.command.shop:
     description: Allows using the shop
     default: true
-  market.command.shards:
-    description: Allows checking Shards balances
-    default: true
-  market.admin:
-    description: Allows administering the shop
+  ultimatedonutsmp.admin.shop:
+    description: Allows reloading the shop's config via /shopedit
     default: op
   sell.command.sell:
     description: Allows selling items and viewing worth/sell stats
@@ -489,7 +493,7 @@ permissions:
     description: Allows listing, browsing, and buying on the Auction House
     default: true
   auctionhouse.admin:
-    description: Allows force-removing any Auction House listing
+    description: Allows cancelling any player's Auction House listing (via /auctionhouse cancel)
     default: op
   orders.command.orders:
     description: Allows posting, fulfilling, and collecting on the Orders board
@@ -545,8 +549,14 @@ permissions:
   teams.command.leaderboard:
     description: Allows viewing the team leaderboards
     default: true
-  crates.admin:
-    description: Allows binding/unbinding crates and giving crate keys
+  ultimatedonutsmp.command.crate:
+    description: Allows running /crate at all
+    default: true
+  ultimatedonutsmp.admin.crate:
+    description: Allows binding/unbinding crate blocks and giving crate keys
+    default: op
+  ultimatedonutsmp.admin.crate.reload:
+    description: Allows reloading the crates config via /crate reload
     default: op
   staff.command.sus:
     description: Allows opening the staff panel

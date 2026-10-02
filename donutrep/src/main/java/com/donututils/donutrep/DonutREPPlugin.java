@@ -4,7 +4,7 @@ import com.donututils.donutrep.economy.EconomyManager;
 import com.donututils.donutrep.economy.ShardManager;
 
 import com.donututils.donutrep.market.command.ShardsCommand;
-import com.donututils.donutrep.market.command.ShopAdminCommand;
+import com.donututils.donutrep.market.command.ShopEditCommand;
 import com.donututils.donutrep.market.command.ShopCommand;
 import com.donututils.donutrep.market.config.Currency;
 import com.donututils.donutrep.market.config.MarketConfig;
@@ -30,7 +30,6 @@ import com.donututils.donutrep.sell.command.WorthCommand;
 
 import com.donututils.donutrep.auctionhouse.AuctionHouseCommand;
 import com.donututils.donutrep.auctionhouse.AuctionHouseManager;
-import com.donututils.donutrep.auctionhouse.ShopEditCommand;
 
 import com.donututils.donutrep.social.ChatCommand;
 import com.donututils.donutrep.social.ChatListener;
@@ -334,7 +333,7 @@ public final class DonutREPPlugin extends JavaPlugin {
         getServer().getPluginManager().registerEvents(new MarketMenuClickListener(), this);
 
         registerCommand("shop", new ShopCommand(marketGuiService));
-        registerCommand("shopadmin", new ShopAdminCommand(this));
+        registerCommand("shopedit", new ShopEditCommand(this));
     }
 
     public void reloadMarket() {
@@ -454,7 +453,9 @@ public final class DonutREPPlugin extends JavaPlugin {
     }
 
     // ═══════════════════════════════════════════════════════════════════════
-    // AUCTION HOUSE (/auctionhouse, alias /ah, /shopedit)
+    // AUCTION HOUSE (/auctionhouse, alias /ah - staff force-cancel any listing
+    // lives inside /auctionhouse cancel now, gated by auctionhouse.admin, since
+    // the real UDS /shopedit name is a different command - shop.yml reload)
     // ═══════════════════════════════════════════════════════════════════════
 
     private void setupAuctionHouse() {
@@ -465,7 +466,6 @@ public final class DonutREPPlugin extends JavaPlugin {
         AuctionHouseCommand auctionHouseCommand = new AuctionHouseCommand(auctionHouseManager);
         registerCommand("auctionhouse", auctionHouseCommand);
         registerCommand("ah", auctionHouseCommand);
-        registerCommand("shopedit", new ShopEditCommand(auctionHouseManager));
     }
 
     public AuctionHouseManager getAuctionHouseManager() {

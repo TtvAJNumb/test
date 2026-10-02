@@ -21,8 +21,8 @@ public final class HelpTopics {
                 "&7Send Money to another online player."
         });
         t.put("shards", new String[]{
-                "&6&lShards &7- /shards [player]",
-                "&7Check your (or another player's) Shards balance - the premium currency."
+                "&6&lShards &7- /shards",
+                "&7Check your own Shards balance - the premium currency. Matches real UDS: no player lookup."
         });
         t.put("balance", new String[]{
                 "&6&lBalance &7- /balance [player] (aliases: /bal, /money)",
@@ -32,9 +32,9 @@ public final class HelpTopics {
                 "&6&lShop &7- /shop",
                 "&7Open the shop - End, Nether, Gear, Food, Shard, and Crate Keys categories, matching real UltimateDonutSmp."
         });
-        t.put("shopadmin", new String[]{
-                "&6&lShopAdmin &7- /shopadmin reload",
-                "&7Reload the shop's config.yml entries."
+        t.put("shopedit", new String[]{
+                "&6&lShopEdit &7- /shopedit reload",
+                "&7Reload the shop's config.yml entries - real UDS's actual command name for this job."
         });
         t.put("sell", new String[]{
                 "&6&lSell &7- /sell, /sellhand, /sellall, /sellmulti <material> <amount>, /sellmultiplier [value], /sellprogress [player], /sellhistory, /topsell, /worth [material]",
@@ -49,10 +49,6 @@ public final class HelpTopics {
         t.put("orders", new String[]{
                 "&6&lOrders &7- /orders [create <price> <amount>|fulfill <id>|my|collect|cancel <id>]",
                 "&7Post a buy request for an item (hold a sample + set price/amount); anyone can fulfill it for the payout."
-        });
-        t.put("shopedit", new String[]{
-                "&6&lShopEdit &7- /shopedit remove <id>",
-                "&7Staff moderation - force-remove any Auction House listing."
         });
         t.put("chat", new String[]{
                 "&6&lChat &7- /chat <help|mute|unmute|delay <seconds>|clear>",

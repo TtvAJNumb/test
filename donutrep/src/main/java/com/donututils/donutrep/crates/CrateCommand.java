@@ -87,7 +87,7 @@ public final class CrateCommand implements CommandExecutor {
 
     @SuppressWarnings("deprecation")
     private void giveKeys(CommandSender sender, String[] args) {
-        if (!sender.hasPermission("crates.admin")) {
+        if (!sender.hasPermission("ultimatedonutsmp.admin.crate")) {
             sender.sendMessage(color("&cYou do not have permission to do that."));
             return;
         }
@@ -124,7 +124,7 @@ public final class CrateCommand implements CommandExecutor {
     }
 
     private void reload(CommandSender sender) {
-        if (!sender.hasPermission("crates.admin")) {
+        if (!sender.hasPermission("ultimatedonutsmp.admin.crate.reload")) {
             sender.sendMessage(color("&cYou do not have permission to do that."));
             return;
         }
@@ -137,7 +137,7 @@ public final class CrateCommand implements CommandExecutor {
             sender.sendMessage(color("&cOnly players can do that."));
             return null;
         }
-        if (!player.hasPermission("crates.admin")) {
+        if (!player.hasPermission("ultimatedonutsmp.admin.crate")) {
             player.sendMessage(color("&cYou do not have permission to do that."));
             return null;
         }

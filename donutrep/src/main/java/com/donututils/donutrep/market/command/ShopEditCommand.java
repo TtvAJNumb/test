@@ -6,22 +6,25 @@ import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 
-public final class ShopAdminCommand implements CommandExecutor {
+/** /shopedit reload - matches real UDS's actual command name for this job (DonutREP previously called
+ * it /shopadmin, which isn't a real UDS command at all). Re-reads the shop categories/items/prices
+ * from config.yml without a server restart. */
+public final class ShopEditCommand implements CommandExecutor {
 
     private final DonutREPPlugin plugin;
 
-    public ShopAdminCommand(DonutREPPlugin plugin) {
+    public ShopEditCommand(DonutREPPlugin plugin) {
         this.plugin = plugin;
     }
 
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
-        if (!sender.hasPermission("market.admin")) {
+        if (!sender.hasPermission("ultimatedonutsmp.admin.shop")) {
             sender.sendMessage(color("&cYou do not have permission to do that."));
             return true;
         }
         if (args.length == 0 || !args[0].equalsIgnoreCase("reload")) {
-            sender.sendMessage(color("&cUsage: /shopadmin reload"));
+            sender.sendMessage(color("&cUsage: /shopedit reload"));
             return true;
         }
         plugin.reloadMarket();

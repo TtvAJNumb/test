@@ -23,7 +23,7 @@ public final class RemoveShardsCommand implements CommandExecutor {
     @Override
     @SuppressWarnings("deprecation")
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
-        if (!sender.hasPermission("economy.admin")) {
+        if (!sender.hasPermission("ultimatedonutsmp.admin.shards")) {
             sender.sendMessage(color("&cYou do not have permission to do that."));
             return true;
         }
