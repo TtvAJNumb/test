@@ -129,6 +129,35 @@ public final class CrateManager {
         player.getInventory().addItem(itemFactory.createKey(definition, amount));
     }
 
+    public int countKeys(Player player, String crateId) {
+        int total = 0;
+        for (ItemStack stack : player.getInventory().getContents()) {
+            if (itemFactory.isKeyFor(stack, crateId)) {
+                total += stack.getAmount();
+            }
+        }
+        return total;
+    }
+
+    /** Removes up to {@code amount} of the given crate's keys from the player's inventory, returning how
+     * many were actually removed (may be less than requested if they didn't have that many). */
+    public int removeKeys(Player player, String crateId, int amount) {
+        PlayerInventory inventory = player.getInventory();
+        int remaining = amount;
+        ItemStack[] contents = inventory.getContents();
+        for (int i = 0; i < contents.length && remaining > 0; i++) {
+            ItemStack stack = contents[i];
+            if (!itemFactory.isKeyFor(stack, crateId)) {
+                continue;
+            }
+            int take = Math.min(remaining, stack.getAmount());
+            stack.setAmount(stack.getAmount() - take);
+            remaining -= take;
+            inventory.setItem(i, stack.getAmount() <= 0 ? null : stack);
+        }
+        return amount - remaining;
+    }
+
     /** Called on right-clicking a bound block: consumes one matching key from the player's hand (or
      * inventory) and rolls a reward. Returns false (no-op, no message sent by this method) if the
      * player has no key for that crate. */

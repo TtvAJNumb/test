@@ -98,10 +98,13 @@ public final class HelpTopics {
         });
         t.put("queue", t.get("duel"));
         t.put("crate", new String[]{
-                "&6&lCrate &7- /crate <bind <id>|unbind|set <player> <crate> <amount>|list|reload>",
-                "&7Bind a chest/barrel/ender chest/shulker box to a crate, or give crate keys."
+                "&6&lCrate &7- /crate <create|delete|type|open|keys|key|take|set|keyall|reload>",
+                "&7Real UDS's crate-management command: define crates, check/grant/remove keys, or virtually open one."
         });
-        t.put("cratebind", t.get("crate"));
+        t.put("cratebind", new String[]{
+                "&6&lCrateBind &7- /cratebind <bind <id>|unbind>",
+                "&7Bind a chest/barrel/ender chest/shulker box to a crate so a matching key opens it on right-click."
+        });
         t.put("team", new String[]{
                 "&6&lTeam &7- /team <create <name>|disband|add <player>|remove <player>|leave|info [player]|list>",
                 "&7Form a team with friends - /teambaltop and /teamshardstop rank teams by it."

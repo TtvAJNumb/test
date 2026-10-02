@@ -330,10 +330,15 @@ commands:
     permission-message: "&cYou do not have permission to use /teamshardstop."
   # --- Crates ---
   crate:
-    description: Bind/unbind a crate block, give crate keys, or manage crates. Note - this binds an existing chest/barrel/etc to a crate (the CrateBindAddon feature); it is not real UDS's crate-creation command of the same name.
-    usage: /crate <bind <id>|unbind|set <player> <crate> <amount>|give|list|reload>
+    description: Real UDS's crate-definition/management command - create, delete, set a crate's type, virtually open one, check/give/take/set keys, or reload.
+    usage: /crate <create <id>|delete <id>|type <id> <type>|open <id> [player]|keys [player] [id]|key <give|take> <player> <id> <amount>|take <player> <id> <amount>|set <player> <id> <amount>|keyall <id> <amount>|reload>
     permission: ultimatedonutsmp.command.crate
     permission-message: "&cYou do not have permission to use /crate."
+  cratebind:
+    description: Bind/unbind an existing chest, trapped chest, barrel, ender chest, or shulker box to a crate (CrateBindAddon's original feature, split out from /crate so it doesn't collide with real UDS's crate-management command of that name).
+    usage: /cratebind <bind <id>|unbind>
+    permission: crates.bind.admin
+    permission-message: "&cYou do not have permission to use /cratebind."
   # --- Staff ---
   sus:
     description: Staff panel - browse online players, freeze/unfreeze, view inventory/ender chest.
@@ -550,13 +555,16 @@ permissions:
     description: Allows viewing the team leaderboards
     default: true
   ultimatedonutsmp.command.crate:
-    description: Allows running /crate at all
+    description: Allows running /crate at all (checking your own keys, virtually opening a crate you hold a key for)
     default: true
   ultimatedonutsmp.admin.crate:
-    description: Allows binding/unbinding crate blocks and giving crate keys
+    description: Allows creating/deleting/retyping crates, checking or granting/removing another player's keys
     default: op
   ultimatedonutsmp.admin.crate.reload:
     description: Allows reloading the crates config via /crate reload
+    default: op
+  crates.bind.admin:
+    description: Allows binding/unbinding an existing chest/barrel/ender chest/shulker box to a crate via /cratebind
     default: op
   staff.command.sus:
     description: Allows opening the staff panel

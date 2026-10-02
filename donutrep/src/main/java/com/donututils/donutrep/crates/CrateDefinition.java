@@ -9,6 +9,7 @@ public record CrateDefinition(
         String displayName,
         Material keyMaterial,
         int keyCustomModelData,
-        List<CrateReward> rewards
+        List<CrateReward> rewards,
+        String type
 ) {
 }

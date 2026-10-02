@@ -663,6 +663,7 @@ public final class DonutREPPlugin extends JavaPlugin {
 
         getServer().getPluginManager().registerEvents(new com.donututils.donutrep.crates.CrateInteractListener(crateManager, afkManager), this);
         registerCommand("crate", new com.donututils.donutrep.crates.CrateCommand(this, crateManager));
+        registerCommand("cratebind", new com.donututils.donutrep.crates.CrateBindCommand(this, crateManager));
     }
 
     public void reloadCrates() {
@@ -714,7 +715,8 @@ public final class DonutREPPlugin extends JavaPlugin {
                         }
                     }
                     crates.put(id.toLowerCase(Locale.ROOT), new com.donututils.donutrep.crates.CrateDefinition(
-                            id, s.getString("display-name", id), keyMaterial, s.getInt("key-custom-model-data", 0), rewards));
+                            id, s.getString("display-name", id), keyMaterial, s.getInt("key-custom-model-data", 0), rewards,
+                            s.getString("type", "DEFAULT")));
                 } catch (IllegalArgumentException ex) {
                     getLogger().warning("Skipping crate '" + id + "' - invalid config: " + ex.getMessage());
                 }
