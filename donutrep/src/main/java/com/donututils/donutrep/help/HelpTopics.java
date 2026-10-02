@@ -114,6 +114,17 @@ public final class HelpTopics {
                 "&6&lSus &7- /sus [player|reload]",
                 "&7Staff panel: browse online players, freeze/unfreeze, view inventory/ender chest."
         });
+        t.put("staff", new String[]{
+                "&6&lStaff Tools &7- /freeze /fly /flyspeed /heal /feed /gamemode /god /vanish /invsee /staffmode /stafflist /staffchat /helpop /report /rename",
+                "&7Standalone moderator tools - freeze a player, fly, heal/feed, change game mode, god mode, vanish, inspect an inventory, stash your gear for investigating, staff chat, helpop, reports, and item renaming."
+        });
+        t.put("freeze", t.get("staff"));
+        t.put("fly", t.get("staff"));
+        t.put("gamemode", t.get("staff"));
+        t.put("vanish", t.get("staff"));
+        t.put("invsee", t.get("staff"));
+        t.put("staffmode", t.get("staff"));
+        t.put("staffchat", t.get("staff"));
         t.put("ahstats", new String[]{
                 "&6&lAhStats &7- /ahstats",
                 "&7Shows real Auction House activity - the highest-priced active listings."

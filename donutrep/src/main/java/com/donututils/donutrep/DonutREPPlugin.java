@@ -173,6 +173,10 @@ public final class DonutREPPlugin extends JavaPlugin {
 
     // ── Staff panel ──────────────────────────────────────────────────────────
     private com.donututils.donutrep.staff.FreezeManager freezeManager;
+    private com.donututils.donutrep.staff.GodManager godManager;
+    private com.donututils.donutrep.staff.VanishManager vanishManager;
+    private com.donututils.donutrep.staff.StaffModeManager staffModeManager;
+    private com.donututils.donutrep.staff.StaffChatManager staffChatManager;
 
     // ── EconomyWatchdog / MarketWatch / PurchaseAlert (Discord addons) ───────
     private com.donututils.donutrep.ecowatch.discord.DiscordWebhook ecoWatchWebhook;
@@ -726,10 +730,41 @@ public final class DonutREPPlugin extends JavaPlugin {
     private void setupStaff() {
         freezeManager = new com.donututils.donutrep.staff.FreezeManager();
         com.donututils.donutrep.staff.StaffPanel staffPanel = new com.donututils.donutrep.staff.StaffPanel(freezeManager);
+        godManager = new com.donututils.donutrep.staff.GodManager();
+        vanishManager = new com.donututils.donutrep.staff.VanishManager(this);
+        staffModeManager = new com.donututils.donutrep.staff.StaffModeManager(vanishManager);
+        staffChatManager = new com.donututils.donutrep.staff.StaffChatManager();
+        com.donututils.donutrep.staff.StaffChatCommand staffChatCommand = new com.donututils.donutrep.staff.StaffChatCommand(staffChatManager);
 
         getServer().getPluginManager().registerEvents(new com.donututils.donutrep.staff.FreezeListener(freezeManager), this);
         getServer().getPluginManager().registerEvents(new com.donututils.donutrep.staff.gui.StaffMenuClickListener(), this);
+        getServer().getPluginManager().registerEvents(new com.donututils.donutrep.staff.GodListener(godManager), this);
+        getServer().getPluginManager().registerEvents(new com.donututils.donutrep.staff.VanishJoinListener(vanishManager), this);
+        getServer().getPluginManager().registerEvents(new com.donututils.donutrep.staff.StaffChatListener(staffChatManager, staffChatCommand), this);
+
         registerCommand("sus", new com.donututils.donutrep.staff.SusCommand(staffPanel));
+        registerCommand("freeze", new com.donututils.donutrep.staff.FreezeCommand(freezeManager));
+        registerCommand("fly", new com.donututils.donutrep.staff.FlyCommand());
+        registerCommand("flyspeed", new com.donututils.donutrep.staff.FlySpeedCommand());
+        registerCommand("heal", new com.donututils.donutrep.staff.HealCommand());
+        registerCommand("feed", new com.donututils.donutrep.staff.FeedCommand());
+        com.donututils.donutrep.staff.GamemodeCommand gamemodeCommand = new com.donututils.donutrep.staff.GamemodeCommand();
+        registerCommand("gamemode", gamemodeCommand);
+        registerCommand("gmc", gamemodeCommand);
+        registerCommand("gms", gamemodeCommand);
+        registerCommand("gma", gamemodeCommand);
+        registerCommand("gmsp", gamemodeCommand);
+        com.donututils.donutrep.staff.GodCommand godCommand = new com.donututils.donutrep.staff.GodCommand(godManager);
+        registerCommand("god", godCommand);
+        registerCommand("godmode", godCommand);
+        registerCommand("vanish", new com.donututils.donutrep.staff.VanishCommand(vanishManager));
+        registerCommand("invsee", new com.donututils.donutrep.staff.InvseeCommand());
+        registerCommand("staffmode", new com.donututils.donutrep.staff.StaffModeCommand(staffModeManager));
+        registerCommand("stafflist", new com.donututils.donutrep.staff.StaffListCommand(vanishManager, staffModeManager));
+        registerCommand("staffchat", staffChatCommand);
+        registerCommand("helpop", new com.donututils.donutrep.staff.HelpOpCommand());
+        registerCommand("report", new com.donututils.donutrep.staff.ReportCommand());
+        registerCommand("rename", new com.donututils.donutrep.staff.RenameCommand());
     }
 
     // ═══════════════════════════════════════════════════════════════════════

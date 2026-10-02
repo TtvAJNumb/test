@@ -345,6 +345,83 @@ commands:
     usage: /sus [player|reload]
     permission: staff.command.sus
     permission-message: "&cYou do not have permission to use /sus."
+  freeze:
+    description: Lock a player in place - standalone version of the /sus panel's freeze button.
+    usage: /freeze <player>
+    permission: staff.freeze
+    permission-message: "&cYou do not have permission to use /freeze."
+  fly:
+    description: Toggle flight for yourself, or (with permission) another player.
+    usage: /fly [player]
+    permission: staff.command.fly
+    permission-message: "&cYou do not have permission to use /fly."
+  flyspeed:
+    description: Set flight speed (0-10) for yourself, or (with permission) another player.
+    usage: /flyspeed <0-10> [player]
+    permission: staff.command.fly
+    permission-message: "&cYou do not have permission to use /flyspeed."
+  heal:
+    description: Fully restore health for yourself, or (with permission) another player.
+    usage: /heal [player]
+    permission: staff.command.heal
+    permission-message: "&cYou do not have permission to use /heal."
+  feed:
+    description: Fully restore food level for yourself, or (with permission) another player.
+    usage: /feed [player]
+    permission: staff.command.feed
+    permission-message: "&cYou do not have permission to use /feed."
+  gamemode:
+    description: Change your (or, with permission, another player's) game mode.
+    usage: /gamemode <survival|creative|adventure|spectator> [player]
+    aliases: [gmc, gms, gma, gmsp]
+    permission: staff.command.gamemode
+    permission-message: "&cYou do not have permission to use /gamemode."
+  god:
+    description: Toggle damage immunity for yourself, or (with permission) another player.
+    usage: /god [player]
+    aliases: [godmode]
+    permission: staff.command.god
+    permission-message: "&cYou do not have permission to use /god."
+  vanish:
+    description: Toggle invisibility to everyone without staff.vanish.see.
+    usage: /vanish [player]
+    permission: staff.command.vanish
+    permission-message: "&cYou do not have permission to use /vanish."
+  invsee:
+    description: Open a live, editable view of a player's inventory.
+    usage: /invsee <player>
+    permission: staff.invsee
+    permission-message: "&cYou do not have permission to use /invsee."
+  staffmode:
+    description: Stash your inventory and switch to creative + vanish + flight for investigating.
+    usage: /staffmode
+    permission: staff.command.staffmode
+    permission-message: "&cYou do not have permission to use /staffmode."
+  stafflist:
+    description: List every online staff member and their vanish/staffmode status.
+    usage: /stafflist
+    permission: staff.command.sus
+    permission-message: "&cYou do not have permission to use /stafflist."
+  staffchat:
+    description: Send one message to staff chat, or toggle always routing your chat there.
+    usage: /staffchat [message]
+    permission: staff.staffchat
+    permission-message: "&cYou do not have permission to use /staffchat."
+  helpop:
+    description: Send a message to every online staff member.
+    usage: /helpop <message>
+    permission: staff.command.helpop
+    permission-message: "&cYou do not have permission to use /helpop."
+  report:
+    description: Report a player to online staff.
+    usage: /report <player> <reason>
+    permission: staff.command.report
+    permission-message: "&cYou do not have permission to use /report."
+  rename:
+    description: Rename the item in your hand.
+    usage: /rename <name>
+    permission: staff.command.rename
+    permission-message: "&cYou do not have permission to use /rename."
   # --- EconomyWatchdog ---
   ecowatch:
     description: Manage EconomyWatchdog's Discord balance-jump alerts.
@@ -481,11 +558,71 @@ permissions:
     description: Exempts a player from being frozen
     default: op
   staff.invsee:
-    description: Allows viewing a player's inventory from the staff panel
+    description: Allows viewing a player's inventory from the staff panel or /invsee
     default: op
   staff.endersee:
     description: Allows viewing a player's ender chest from the staff panel
     default: op
+  staff.command.fly:
+    description: Allows toggling your own flight
+    default: op
+  staff.fly.others:
+    description: Allows toggling another player's flight or fly speed
+    default: op
+  staff.command.heal:
+    description: Allows healing yourself
+    default: op
+  staff.heal.others:
+    description: Allows healing another player
+    default: op
+  staff.command.feed:
+    description: Allows feeding yourself
+    default: op
+  staff.feed.others:
+    description: Allows feeding another player
+    default: op
+  staff.command.gamemode:
+    description: Allows changing your own game mode
+    default: op
+  staff.gamemode.others:
+    description: Allows changing another player's game mode
+    default: op
+  staff.command.god:
+    description: Allows toggling your own god mode
+    default: op
+  staff.god.others:
+    description: Allows toggling another player's god mode
+    default: op
+  staff.command.vanish:
+    description: Allows toggling your own vanish state
+    default: op
+  staff.vanish.others:
+    description: Allows vanishing another player
+    default: op
+  staff.vanish.see:
+    description: Allows seeing vanished players
+    default: op
+  staff.command.staffmode:
+    description: Allows using /staffmode
+    default: op
+  staff.staffchat:
+    description: Allows using and receiving staff chat
+    default: op
+  staff.command.helpop:
+    description: Allows sending a /helpop message
+    default: true
+  staff.helpop.receive:
+    description: Allows receiving /helpop messages
+    default: op
+  staff.command.report:
+    description: Allows reporting a player
+    default: true
+  staff.report.receive:
+    description: Allows receiving /report messages
+    default: op
+  staff.command.rename:
+    description: Allows renaming the item in your hand
+    default: true
   economywatchdog.admin:
     description: Allows managing EconomyWatchdog's Discord balance-jump alerts
     default: op
